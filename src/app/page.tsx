@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cars, Car, carsByCategory } from "./data";
+import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
   let price = original;
@@ -12,6 +13,7 @@ function getDiscountedPrice(original: number) {
 
 export default function Home() {
   const [selected, setSelected] = useState<string[]>([]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
   const total = selectedCars.reduce((sum: number, car: Car) => sum + (car.price ? getDiscountedPrice(car.price) : 0), 0);
@@ -24,20 +26,116 @@ export default function Home() {
     setSelected([]);
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
+  const scrollToCategory = (category: string) => {
+    const element = document.getElementById(`category-${category}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setIsMenuOpen(false); // ปิดเมนูหลังจากคลิก
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-900 mb-2">Forr First</h1>
-          <p className="text-xl text-blue-700 mb-6">เลือกรถที่คุณต้องการ</p>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 mx-auto rounded-full"></div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r text-blue-600 bg-clip-text mb-2 flex items-center justify-center">
+            <div className="relative w-14 h-14 mr-4">
+              <Image
+                src="/logo.webp"
+                alt="Forr First Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            Forr First
+          </h1>
+          <p className="text-xl text-blue-600 font-bold mt-5 mb-[-10]">ราคารถแคช RCRB 🚗 </p>
+          <p><br/>หมายเหตุ:ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ <br/>หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน</p>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-500 mx-auto rounded-full mt-2"></div>
         </div>
+
+        {/* Desktop Category Navigation - Sticky */}
+        <div className="hidden md:block sticky top-4 z-40 mb-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
+          <div className="grid grid-cols-3 lg:grid-cols-7 gap-2">
+            {Object.keys(carsByCategory).map((category) => (
+              <button
+                key={category}
+                onClick={() => scrollToCategory(category)}
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm"
+              >
+                🚗 {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Hamburger Button */}
+        <div className="md:hidden mb-6">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span>🚀 เลือก Class</span>
+          </button>
+        </div>
+
+        {/* Mobile Sidebar */}
+        {isMenuOpen && (
+          <div className="md:hidden fixed inset-0 z-50">
+            {/* Backdrop */}
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setIsMenuOpen(false)}
+            ></div>
+            
+            {/* Sidebar */}
+            <div className="absolute right-0 top-0 h-full w-80 bg-white/95 backdrop-blur-md shadow-2xl border-l border-blue-200/50">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-800">🚀 เลือก Class</h3>
+                  <button
+                    onClick={() => setIsMenuOpen(false)}
+                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors duration-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-2">
+                  {Object.keys(carsByCategory).map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => scrollToCategory(category)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg text-left"
+                    >
+                      🚗 {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Car Categories */}
         <div className="grid gap-8">
           {Object.entries(carsByCategory).map(([category, list]) => (
-            <div key={category} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-blue-200/50 overflow-hidden">
+            <div key={category} id={`category-${category}`} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-blue-200/50 overflow-hidden">
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
                 <h2 className="text-2xl font-bold text-white text-center">
                   🚗 {category} 🚗
@@ -63,7 +161,7 @@ export default function Home() {
                               className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-gray-900 text-sm mb-2 truncate">
+                              <div className="font-semibold text-black text-md mb-2 truncate">
                                 {car.name}
                               </div>
                             </div>
@@ -71,7 +169,7 @@ export default function Home() {
                           <div className="mt-auto">
                             {car.type === "coupon" && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 w-full justify-center">
-                                🎫 รถคูปอง
+                                🎫 รถคูปอง <br/>สอบถามราคากับแอดมิน
                               </span>
                             )}
                             {car.type === "keyLE" && car.price && (
@@ -82,8 +180,8 @@ export default function Home() {
                             {!car.type && car.price && (
                               <div className="space-y-1 text-center">
                                 <div className="text-gray-500 line-through text-xs">ปกติ {car.price}บาท</div>
-                                <div className="text-blue-600 font-semibold text-sm">
-                                  💸{getDiscountedPrice(car.price)}บาท
+                                <div className="text-blue-600 font-semibold text-md">
+                                  💸{getDiscountedPrice(car.price)} บาท
                                 </div>
                               </div>
                             )}
@@ -100,13 +198,20 @@ export default function Home() {
 
         {/* Selected Cars Summary */}
         {selectedCars.length > 0 && (
-          <div className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
+          <div id="order-summary" className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-400 to-emerald-600 px-6 py-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white">
-                  🛒 รายการที่คุณเลือก ({selectedCars.length} รายการ)
-                </h2>
-                <button
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+  <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+    🛒 รายการที่คุณเลือก {selectedCars.length} รายการ
+  </p>
+  <p className="text-sm sm:text-base md:text-lg text-white/80 italic ml-auto mr-auto">
+    (แคปส่วนนี้แล้วส่งรูปให้แอดมินครับ)
+  </p>
+</div>
+
+
+                   <button
                   onClick={clearAll}
                   className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
                 >
@@ -135,6 +240,9 @@ export default function Home() {
                       </button>
                     </div>
                     <div className="space-y-1">
+                      <div className="text-xs text-gray-500 font-medium">
+                      🚗 {car.category}
+                      </div>
                       {car.type === "coupon" && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 w-full justify-center">
                           🎫 รถคูปอง
@@ -148,7 +256,7 @@ export default function Home() {
                       {car.price && (
                         <div className="text-center">
                           <div className="text-blue-600 font-semibold text-sm">
-                            💸{getDiscountedPrice(car.price)}บาท
+                            💸{getDiscountedPrice(car.price)} บาท
                           </div>
                         </div>
                       )}
@@ -159,7 +267,7 @@ export default function Home() {
               <div className="border-t border-blue-200 pt-4">
                 <div className="flex justify-between items-center">
                   <span className="text-xl font-semibold text-gray-700">รวมทั้งหมด:</span>
-                  <span className="text-3xl font-bold text-blue-600">💸{total}บาท</span>
+                  <span className="text-3xl font-bold text-blue-600">💸{total.toLocaleString()} บาท</span>
                 </div>
               </div>
             </div>
@@ -168,7 +276,75 @@ export default function Home() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-blue-600">
-          <p className="text-sm">© 2024 Forr First - Car Selection Service</p>
+          <p className="text-sm">© 2024 Forr First - Cash Shop Service</p>
+        </div>
+
+        {/* Floating Navigation Buttons - Right Side, Center Vertically */}
+        <div className="fixed right-6 top-1/2 transform -translate-y-1/2 flex flex-col space-y-3 z-50">
+          {/* Scroll to Top Button */}
+          <button
+            onClick={scrollToTop}
+            className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
+            title="ไปข้างบนสุด"
+          >
+            <svg className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+          </button>
+
+          {/* Scroll to Bottom Button */}
+          {selectedCars.length > 0 && (
+            <button
+              onClick={scrollToBottom}
+              className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
+              title="ไปดูรายการสั่งซื้อ"
+            >
+              <svg className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Social Media Buttons - Bottom Right */}
+        <div className="fixed bottom-6 right-6 flex flex-col space-y-3 z-50">
+          {/* Facebook Button */}
+          <a
+            href="https://www.facebook.com/violettobyforrfirst"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
+            title="ติดตาม Facebook"
+          >
+            <svg className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+
+          {/* Messenger Button */}
+          <a
+  href="https://m.me/violettobyforrfirst?text=รับรายการตามนี้ครับ"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="w-[48px] h-[48px] rounded-full bg-white transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center justify-center"
+  title="ส่งข้อความผ่าน Messenger"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 512 512"
+    className="w-6 h-6"
+  >
+    <path
+      fill="#0084FF"
+      d="M256 8C119 8 8 119 8 256c0 72 29 137 76 180 8 7 7 12 8 58a20 20 0 0 0 30 18c53-23 54-25 63-22 153 32 320-66 320-234C504 119 393 8 256 8z"
+    />
+    <path
+      fill="#fff"
+      d="M405 193l-73 115a37 37 0 0 1-54 10l-58-43a15 15 0 0 0-18 0l-78 59c-10 8-24-5-17-16l73-115a37 37 0 0 1 54-10l58 43a15 15 0 0 0 18 0l78-59c10-8 24 5 17 16z"
+    />
+  </svg>
+</a>
+
         </div>
       </div>
     </div>

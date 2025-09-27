@@ -62,7 +62,7 @@ export default function Home() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 font-bold text-lg">รวมทั้งหมด 💸{total}บาท</p>
+          <p className="mt-4 font-bold text-lg">รวมทั้งหมด 💸{total} บาท</p>
         </div>
       )}
     </main>
