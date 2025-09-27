@@ -1,16 +1,165 @@
-// data.ts
 export type Car = {
-    name: string;
-    price?: number;
-    category: string;
-    type?: "coupon" | "keyLE";
-  };
-  
-  export const cars: Car[] = [
+  name: string;
+  price?: number;
+  category: string;
+  type?: "coupon" | "keyLE";
+};
+
+export const categories = [
+  "City",
+  "S.Sedan",
+  "M.Sedan", 
+  "SUV",
+  "L.Sedan",
+  "Sports",
+  "Exotic",
+] as const;
+
+export type Category = typeof categories[number];
+
+export const carsByCategory: Record<Category, Car[]> = {
+  City: [
     { name: "Spice", price: 249, category: "City" },
     { name: "Tutuki", price: 189, category: "City" },
-    { name: "Blizzard6", category: "Sports", type: "coupon" },
-    { name: "Zet SL", price: 309, category: "Sports", type: "keyLE" },
-    // ... เพิ่มรถทั้งหมดตามลำดับที่คุณส่งมา
-  ];
+    { name: "Amore", price: 189, category: "City" },
+    { name: "Sparrow", price: 199, category: "City" },
+    { name: "Neobee", price: 189, category: "City" },
+    { name: "Steeler", price: 259, category: "City" },
+    { name: "Icoupe", price: 299, category: "City" },
+    { name: "Mouse", price: 249, category: "City" },
+    { name: "Sleek", price: 189, category: "City" },
+    { name: "5000", price: 249, category: "City" },
+    { name: "Muze", price: 249, category: "City" },
+    { name: "Bolero", price: 249, category: "City" },
+    { name: "Civil3", price: 369, category: "City" },
+  ],
+  "S.Sedan": [
+    { name: "Ravic", price: 219, category: "S.Sedan" },
+    { name: "Raptor", price: 219, category: "S.Sedan" },
+    { name: "Ever HD", price: 189, category: "S.Sedan" },
+    { name: "C2", price: 199, category: "S.Sedan" },
+    { name: "EverFD", price: 259, category: "S.Sedan" },
+    { name: "Zet C", price: 205, category: "S.Sedan" },
+    { name: "Astro 4", price: 215, category: "S.Sedan" },
+    { name: "GX250", price: 295, category: "S.Sedan" },
+    { name: "Garen", price: 205, category: "S.Sedan" },
+  ],
+  "M.Sedan": [
+    { name: "Atlantis", price: 259, category: "M.Sedan" },
+    { name: "CaldishCTS", price: 219, category: "M.Sedan" },
+    { name: "Sonnetax", price: 259, category: "M.Sedan" },
+    { name: "Capture", price: 299, category: "M.Sedan" },
+    { name: "Zet E", price: 219, category: "M.Sedan" },
+    { name: "Bullet V", price: 235, category: "M.Sedan" },
+    { name: "Harmony", price: 235, category: "M.Sedan" },
+    { name: "Classic", price: 259, category: "M.Sedan" },
+    { name: "Pike", price: 219, category: "M.Sedan" },
+    { name: "Take", price: 219, category: "M.Sedan" },
+  ],
+  SUV: [
+    { name: "Hunter", price: 259, category: "SUV" },
+    { name: "Roid", price: 199, category: "SUV" },
+    { name: "Saturn", price: 299, category: "SUV" },
+    { name: "Buffalo", price: 199, category: "SUV" },
+    { name: "Wild", price: 299, category: "SUV" },
+    { name: "Pluto", price: 299, category: "SUV" },
+    { name: "Cherria", price: 299, category: "SUV" },
+    { name: "TerraTruck", price: 299, category: "SUV" },
+    { name: "Commando", price: 159, category: "SUV" },
+    { name: "Bullet WD", price: 269, category: "SUV" },
+  ],
+  "L.Sedan": [
+    { name: "Kosmos", price: 289, category: "L.Sedan" },
+    { name: "Zet S", price: 289, category: "L.Sedan" },
+    { name: "300r", price: 289, category: "L.Sedan" },
+    { name: "Echo2", price: 279, category: "L.Sedan" },
+    { name: "Maestro", price: 289, category: "L.Sedan" },
+    { name: "Bullet VII", price: 289, category: "L.Sedan" },
+  ],
+  Sports: [
+    { name: "Blizzard6", type: "coupon", category: "Sports" },
+    { name: "BulletT4", price: 299, category: "Sports" },
+    { name: "Zet SL", price: 309,  category: "Sports" },
+    { name: "Kaiser", price: 259, category: "Sports" },
+    { name: "Mustard", type: "coupon", category: "Sports" },
+    { name: "Nishiya S", price: 289, category: "Sports" },
+    { name: "Cyclone", price: 279,  category: "Sports" },
+    { name: "V35", type: "coupon", category: "Sports" },
+    { name: "M7", type: "coupon", category: "Sports" },
+    { name: "Nishiya R", type: "coupon", category: "Sports" },
+    { name: "Bumble", type: "coupon", category: "Sports" },
+    { name: "Sole", type: "coupon", category: "Sports" },
+    { name: "Famous", type: "coupon", category: "Sports" },
+    { name: "Zeus", type: "coupon", category: "Sports" },
+    { name: "Ares", price: 369, category: "Sports" },
+    { name: "Nishiya R32", price: 299, category: "Sports" },
+    { name: "Dove", price: 299, category: "Sports" },
+    { name: "Rockstar", price: 369, category: "Sports" },
+    { name: "Elite", price: 299, category: "Sports" },
+    { name: "Rolling", price: 299, category: "Sports" },
+    { name: "Snow", price: 299, category: "Sports" },
+    { name: "Oldmapsi", price: 299, category: "Sports" },
+    { name: "Cloud", price: 259, category: "Sports" },
+    { name: "Frigate", price: 299, category: "Sports" },
+    { name: "Angelino", price: 299, category: "Sports" },
+    { name: "Cris", price: 299, category: "Sports" },
+    { name: "Hera", price: 299, category: "Sports" },
+    { name: "Maple", price: 299, category: "Sports" },
+    { name: "Karas", price: 219, category: "Sports" },
+    { name: "Dolphin", price: 219, category: "Sports" },
+    { name: "Unicon", price: 324, category: "Sports" },
+    { name: "Mento", price: 299, category: "Sports" },
+    { name: "Fresh", price: 299, category: "Sports" },
+    { name: "Knight", price: 299, category: "Sports" },
+    { name: "Desperado", price: 279,  category: "Sports" },
+    { name: "Zero", price: 259, category: "Sports" },
+    { name: "Grafico", price: 279, category: "Sports" },
+    { name: "Sky", price: 279, category: "Sports" },
+    { name: "Bullet VI", price: 285, category: "Sports" },
+    { name: "Superior", price: 269, category: "Sports" },
+    { name: "Universal", price: 269, category: "Sports" },
+    { name: "Zencoupe", price: 259,  category: "Sports" },
+    { name: "VC9", price: 269, category: "Sports" },
+    { name: "Shark", price: 369, category: "Sports" },
+    { name: "BulletPG", price: 369, category: "Sports" },
+    { name: "Spin", price: 259, category: "Sports" },
+    { name: "Lex", price: 329,  category: "Sports" },
+    { name: "Tornado", price: 489, category: "Sports" },
+  ],
+  Exotic: [
+    { name: "Anx", type: "coupon", category: "Exotic" },
+    { name: "Zest", type: "coupon", category: "Exotic" },
+    { name: "Lance", type: "coupon", category: "Exotic" },
+    { name: "Apollo", price: 399, category: "Exotic" },
+    { name: "MGZR", price: 369, category: "Exotic" },
+    { name: "Lexyath", type: "coupon", category: "Exotic" },
+    { name: "Phoenix", price: 369, category: "Exotic" },
+    { name: "BZO", price: 369, category: "Exotic" },
+    { name: "Core", price: 369, category: "Exotic" },
+    { name: "Uptimus", price: 369, category: "Exotic" },
+    { name: "Nika", price: 369, category: "Exotic" },
+    { name: "Loki", price: 399, category: "Exotic" },
+    { name: "Triquen", price: 369, category: "Exotic" },
+    { name: "Raide", price: 499, category: "Exotic" },
+    { name: "Vega", price: 399, category: "Exotic" },
+    { name: "GTV98", price: 790, category: "Exotic" },
+    { name: "Archer", price: 369, category: "Exotic" },
+    { name: "Garuda", price: 599, category: "Exotic" },
+    { name: "Ryzen", price: 329, category: "Exotic" },
+    { name: "Scene", price: 529, category: "Exotic" },
+    { name: "Ransir", price: 529, category: "Exotic" },
+    { name: "F1i", price: 499, category: "Exotic" },
+    { name: "Gabriel", type: "coupon", category: "Exotic" },
+    { name: "Veloce9", price: 329, category: "Exotic" },
+    { name: "Milano", price: 329, category: "Exotic" },
+    { name: "Vital", price: 349, category: "Exotic" },
+    { name: "Romans", type: "coupon", category: "Exotic" },
+    { name: "RC1", type: "coupon", category: "Exotic" },
+    { name: "Zet SOL", type: "coupon", category: "Exotic" },
+    { name: "Hades", price: 529, category: "Exotic" },
+  ],
+};
+
+// Flatten all cars into a single array for easier use
+export const cars: Car[] = Object.values(carsByCategory).flat();
   
