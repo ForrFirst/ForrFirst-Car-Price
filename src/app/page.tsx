@@ -58,8 +58,8 @@ export default function Home() {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r text-blue-600 bg-clip-text mb-2 flex items-center justify-center">
-            <div className="relative w-14 h-14 mr-4">
+          <h1 className="text-5xl font-bold bg-gradient-to-r text-blue-600 bg-clip-text flex items-center justify-center">
+            <div className="relative w-14 h-14 mr-5">
               <Image
                 src="/logo.webp"
                 alt="Forr First Logo"
@@ -69,9 +69,9 @@ export default function Home() {
             </div>
             Forr First
           </h1>
-          <p className="text-xl text-blue-600 font-bold mt-5 mb-[-10]">ราคารถแคช RCRB 🚗 </p>
-          <p><br/>หมายเหตุ:ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ <br/>หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน</p>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-500 mx-auto rounded-full mt-2"></div>
+          <p className="text-2xl text-balck font-bold mt-7 mb-[-10]">ราคารถแคช RCRB 🚗 </p>
+          <p className="text-xl"><br/>หมายเหตุ:ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน</p>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-500 mx-auto rounded-full mt-4"></div>
         </div>
 
         {/* Desktop Category Navigation - Dynamic Position */}
@@ -212,21 +212,21 @@ export default function Home() {
         {/* Selected Cars Summary */}
         {selectedCars.length > 0 && (
           <div id="order-summary" className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-400 to-emerald-600 px-6 py-4">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
               <div className="flex justify-between items-center">
               <div className="flex flex-wrap items-center gap-2 sm:gap-4">
   <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-    🛒 รายการที่คุณเลือก {selectedCars.length} รายการ
+  🚗 จำนวนรถที่เลือก รวมทั้งหมด {selectedCars.length} คัน
   </p>
   <p className="text-sm sm:text-base md:text-lg text-white/80 italic ml-auto mr-auto">
-    (แคปส่วนนี้แล้วส่งรูปให้แอดมินครับ)
+    (แคปส่วนนี้แล้วส่งให้แอดมินครับ)
   </p>
 </div>
 
 
                    <button
                   onClick={clearAll}
-                  className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
+                  className="bg-white/20 hover:bg-white/30 text-white px-2 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
                 >
                   <span>🗑️</span>
                   <span>ลบทั้งหมด</span>
@@ -336,7 +336,7 @@ export default function Home() {
 
           {/* Messenger Button */}
           <a
-  href="https://m.me/violettobyforrfirst?text=รับรายการตามนี้ครับ"
+  href="https://m.me/violettobyforrfirst?text=รับรถแคชตามรายการนี้ครับ (ส่งรูปรายการทั้งหมดที่แคปไว้ได้เลยครับ)"
   target="_blank"
   rel="noopener noreferrer"
   className="w-[48px] h-[48px] rounded-full bg-white transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center justify-center"
