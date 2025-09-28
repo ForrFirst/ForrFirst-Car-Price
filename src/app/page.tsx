@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
@@ -14,6 +14,7 @@ function getDiscountedPrice(original: number) {
 export default function Home() {
   const [selected, setSelected] = useState<string[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
   const total = selectedCars.reduce((sum: number, car: Car) => sum + (car.price ? getDiscountedPrice(car.price) : 0), 0);
@@ -39,8 +40,18 @@ export default function Home() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    setIsMenuOpen(false); // ปิดเมนูหลังจากคลิก
+    setIsMenuOpen(false); 
   };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 100);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100">
@@ -63,24 +74,26 @@ export default function Home() {
           <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-500 mx-auto rounded-full mt-2"></div>
         </div>
 
-        {/* Desktop Category Navigation - Sticky */}
-        <div className="hidden md:block sticky top-4 z-40 mb-8 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
-          <div className="grid grid-cols-3 lg:grid-cols-7 gap-2">
-            {Object.keys(carsByCategory).map((category) => (
-              <button
-                key={category}
-                onClick={() => scrollToCategory(category)}
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm"
-              >
-                🚗 {category}
-              </button>
-            ))}
+        {/* Desktop Category Navigation - Dynamic Position */}
+        <div className={`hidden md:block ${isScrolled ? 'fixed left-4 top-1/2 transform -translate-y-1/2 z-40' : 'mb-8'}`}>
+          <div className={`bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 ${isScrolled ? 'w-48' : 'w-full'}`}>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
+            <div className={`grid gap-2 ${isScrolled ? 'grid-cols-1' : 'grid-cols-3 lg:grid-cols-7'}`}>
+              {Object.keys(carsByCategory).map((category) => (
+                <button
+                  key={category}
+                  onClick={() => scrollToCategory(category)}
+                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm ${isScrolled ? 'text-left' : 'text-center'}`}
+                >
+                  🚗 {category}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Mobile Hamburger Button */}
-        <div className="md:hidden mb-6">
+        <div className="md:hidden mb-6 sticky top-4 z-40">
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
