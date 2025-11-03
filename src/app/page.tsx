@@ -6,7 +6,6 @@ import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
   let price = original;
-  price -= price * 0.25;
   price -= price * 0.10;
   return Math.round(price);
 }
