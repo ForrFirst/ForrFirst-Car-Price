@@ -159,7 +159,12 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {list.map((car: Car) => (
                     <label key={car.name} className="group cursor-pointer">
-                      <div className="bg-white rounded-xl p-4 shadow-md border-2 border-transparent group-hover:border-blue-300 transition-all duration-300 hover:shadow-lg h-full">
+                      <div className="bg-white rounded-xl p-4 shadow-md border-2 border-transparent group-hover:border-blue-300 transition-all duration-300 hover:shadow-lg h-full relative">
+                        {car.isNew && (
+                          <span className="new-badge absolute top-2 right-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap shadow-lg shadow-blue-500/50 hover:scale-110 transition-transform duration-200 z-10">
+                            ✨ NEW
+                          </span>
+                        )}
                         <div className="flex flex-col h-full">
                           <div className="flex items-start space-x-3 mb-3">
                             <input
@@ -241,7 +246,14 @@ export default function Home() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                        <span className="font-medium text-gray-900 text-sm truncate">{car.name}</span>
+                        <span className="font-medium text-gray-900 text-sm truncate flex items-center gap-1.5 flex-wrap">
+                          {car.name}
+                          {car.isNew && (
+                            <span className="new-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap shadow-md shadow-blue-500/40">
+                              ✨ NEW
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <button
                         onClick={() => removeCar(car.name)}

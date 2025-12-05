@@ -3,6 +3,7 @@ export type Car = {
   price?: number;
   category: string;
   type?: "coupon" | "keyLE";
+  isNew?: boolean;
 };
 
 export const categories = [
@@ -125,6 +126,7 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Spin", price: 259, category: "Sports" },
     { name: "Lex", price: 329,  category: "Sports" },
     { name: "Tornado", price: 489, category: "Sports" },
+    { name: "Butter", price: 369, category: "Sports", isNew: true },
   ],
   Exotic: [
     { name: "Anx", type: "coupon", category: "Exotic" },
