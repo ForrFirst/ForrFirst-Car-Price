@@ -14,6 +14,7 @@ export default function Home() {
   const [selected, setSelected] = useState<string[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
   const total = selectedCars.reduce((sum: number, car: Car) => sum + (car.price ? getDiscountedPrice(car.price) : 0), 0);
@@ -23,7 +24,12 @@ export default function Home() {
   };
 
   const clearAll = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearAll = () => {
     setSelected([]);
+    setShowClearConfirm(false);
   };
 
   const scrollToTop = () => {
@@ -57,8 +63,8 @@ export default function Home() {
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r text-blue-600 bg-clip-text flex items-center justify-center">
-            <div className="relative w-14 h-14 mr-5">
+          <div className="flex items-center justify-center mb-3">
+            <div className="relative w-12 h-12 mr-3 drop-shadow-lg">
               <Image
                 src="/logo.webp"
                 alt="Forr First Logo"
@@ -66,13 +72,26 @@ export default function Home() {
                 className="object-contain"
               />
             </div>
-            Forr First
-          </h1>
-          <p className="text-2xl font-bold mt-7 mb-[-10]" style={{color: 'black'}}>ราคารถแคช RCRB 🚗 </p>
-          <p className="text-xl" style={{color: 'black'}}>          <br/>เลือกรถทั้งหมดที่ต้องการจะสั่งซื้อ สามารถกดปุ่มลูกศร<span style={{color: 'green'}}>สีเขียว</span>ทางด้านขวา
-          <br/>แล้วแคปรายการทั้งหมดเพื่อส่งรูปให้กับแอดมินทาง Facebook ได้เลยครับ</p>
-          <p className="text-xl mt-3" style={{color: 'black'}}>หมายเหตุ:ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน</p>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-indigo-500 mx-auto rounded-full mt-4"></div>
+            <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+              Forr First
+            </h1>
+          </div>
+          <p className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
+            ราคารถแคช Rebirth 🚗
+          </p>
+          <div className="max-w-3xl mx-auto space-y-3">
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+              เลือกรถทั้งหมดที่ต้องการจะสั่งซื้อ สามารถกดปุ่มลูกศร<span className="text-green-600 font-semibold">สีเขียว</span>ทางด้านขวา
+              <br className="hidden sm:block" />
+              แล้วแคปรายการทั้งหมดเพื่อส่งรูปให้กับแอดมินทาง Facebook ได้เลยครับ
+            </p>
+            <div className="inline-block px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm md:text-base text-amber-800 font-medium">
+                💡 หมายเหตุ: ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน
+              </p>
+            </div>
+          </div>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 mx-auto rounded-full mt-4 shadow-md shadow-blue-400/50"></div>
         </div>
 
         {/* Desktop Category Navigation - Dynamic Position */}
@@ -161,7 +180,7 @@ export default function Home() {
                     <label key={car.name} className="group cursor-pointer">
                       <div className="bg-white rounded-xl p-4 shadow-md border-2 border-transparent group-hover:border-blue-300 transition-all duration-300 hover:shadow-lg h-full relative">
                         {car.isNew && (
-                          <span className="new-badge absolute top-2 right-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap shadow-lg shadow-blue-500/50 hover:scale-110 transition-transform duration-200 z-10">
+                          <span className="new-badge absolute top-2 right-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap shadow-lg shadow-blue-500/50 z-10">
                             ✨ NEW
                           </span>
                         )}
@@ -373,6 +392,42 @@ export default function Home() {
 
         </div>
       </div>
+
+      {/* Clear All Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowClearConfirm(false)}
+          ></div>
+          
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-blue-200/50 p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">
+              ยืนยันการลบทั้งหมด
+            </h3>
+            <p className="text-gray-600 mb-6 text-center">
+              คุณต้องการลบรถทั้งหมดที่เลือกไว้ ({selectedCars.length} คัน) ใช่หรือไม่?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-all duration-300"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={confirmClearAll}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
+              >
+                <span>🗑️</span>
+                <span>ตกลง</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
