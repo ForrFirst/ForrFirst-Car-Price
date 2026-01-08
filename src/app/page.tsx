@@ -168,15 +168,27 @@ export default function Home() {
         {/* Car Categories */}
         <div className="grid gap-8">
           {Object.entries(carsByCategory).map(([category, list]) => (
-            <div key={category} id={`category-${category}`} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-blue-200/50 overflow-hidden">
+            <div 
+              key={category} 
+              id={`category-${category}`} 
+              className="bg-white rounded-2xl shadow-lg border border-blue-200/50 overflow-hidden"
+              style={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                minHeight: '200px',
+                position: 'relative',
+                zIndex: 1,
+                isolation: 'isolate'
+              }}
+            >
               <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
                 <h2 className="text-2xl font-bold text-white text-center">
                   🚗 {category} 🚗
                 </h2>
               </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {list.map((car: Car) => (
+              <div className="p-6" style={{ position: 'relative', zIndex: 2 }}>
+                {list && list.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {list.map((car: Car) => (
                     <label key={car.name} className="group cursor-pointer">
                       <div className="bg-white rounded-xl p-4 shadow-md border-2 border-transparent group-hover:border-blue-300 transition-all duration-300 hover:shadow-lg h-full relative">
                         {car.isNew && (
@@ -227,8 +239,13 @@ export default function Home() {
                         </div>
                       </div>
                     </label>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>ไม่มีข้อมูลในหมวดนี้</p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
