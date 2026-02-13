@@ -33,7 +33,7 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Muze", price: 249, category: "City" },
     { name: "Bolero", price: 249, category: "City" },
     { name: "Civil3", price: 369, category: "City" },
-    { name: "Lunar", price: 477, category: "City",isNew: true },
+    { name: "Lunar", price: 477, category: "City" },
   ],
   "S.Sedan": [
     { name: "Ravic", price: 219, category: "S.Sedan" },
@@ -128,6 +128,7 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Lex", price: 329,  category: "Sports" },
     { name: "Tornado", price: 489, category: "Sports" },
     { name: "Butter", price: 369, category: "Sports" },
+    { name: "Blossom", price: 369, category: "Sports",isNew: true },
   ],
   Exotic: [
     { name: "Anx", type: "coupon", category: "Exotic" },
@@ -144,7 +145,7 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Loki", price: 399, category: "Exotic" },
     { name: "Triquen", price: 369, category: "Exotic" },
     { name: "Raide", price: 499, category: "Exotic" },
-    { name: "Mozart", price: 599, category: "Exotic",isNew: true},
+    { name: "Mozart", price: 599, category: "Exotic" },
     { name: "Vega", price: 399, category: "Exotic" },
     { name: "GTV98", price: 790, category: "Exotic" },
     { name: "Archer", price: 369, category: "Exotic" },
