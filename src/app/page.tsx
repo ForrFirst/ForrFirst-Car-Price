@@ -10,6 +10,12 @@ function getDiscountedPrice(original: number) {
   return Math.round(price);
 }
 
+/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ -10% อัตโนมัติ */
+function getDisplayPrice(car: Car): number | null {
+  if (!car.price) return null;
+  return car.salePrice ?? getDiscountedPrice(car.price);
+}
+
 export default function Home() {
   const [selected, setSelected] = useState<string[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,7 +23,10 @@ export default function Home() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
-  const total = selectedCars.reduce((sum: number, car: Car) => sum + (car.price ? getDiscountedPrice(car.price) : 0), 0);
+  const total = selectedCars.reduce((sum: number, car: Car) => {
+    const p = getDisplayPrice(car);
+    return sum + (p ?? 0);
+  }, 0);
 
   const removeCar = (carName: string) => {
     setSelected(prev => prev.filter(name => name !== carName));
@@ -192,9 +201,11 @@ export default function Home() {
                     <label key={car.name} className="group cursor-pointer">
                       <div className="bg-white rounded-xl p-4 shadow-md border-2 border-transparent group-hover:border-blue-300 transition-all duration-300 hover:shadow-lg h-full relative">
                         {car.isNew && (
-                          <span className="new-badge absolute top-2 right-2 inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap shadow-lg shadow-blue-500/50 z-10">
-                            ✨ NEW
-                          </span>
+                          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+                            <span className="new-badge inline-flex items-center px-2 py-1 rounded-full text-[9px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap">
+                              ✨ NEW
+                            </span>
+                          </div>
                         )}
                         <div className="flex flex-col h-full">
                           <div className="flex items-start space-x-3 mb-3">
@@ -227,11 +238,16 @@ export default function Home() {
                                 🔑 กุญแจLE
                               </span>
                             )}
-                            {!car.type && car.price && (
+                            {!car.type && car.price && getDisplayPrice(car) !== null && (
                               <div className="space-y-1 text-center">
-                                <div className="text-gray-500 line-through text-xs">ปกติ {car.price}บาท</div>
-                                <div className="text-blue-600 font-semibold text-md">
-                                  💸{getDiscountedPrice(car.price)} บาท
+                                <div className="text-gray-500 line-through text-xs">ปกติ {car.price} บาท</div>
+                                <div className="flex items-center justify-center gap-2 flex-wrap">
+                                  {car.isSale && (
+                                    <span className="sale-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-rose-300 via-orange-200 to-amber-300 text-rose-800 whitespace-nowrap border border-rose-200/60">
+                                      🔥 SALE
+                                    </span>
+                                  )}
+                                  <span className="text-blue-600 font-semibold text-md">💸{getDisplayPrice(car)} บาท</span>
                                 </div>
                               </div>
                             )}
@@ -285,7 +301,7 @@ export default function Home() {
                         <span className="font-medium text-gray-900 text-sm truncate flex items-center gap-1.5 flex-wrap">
                           {car.name}
                           {car.isNew && (
-                            <span className="new-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap shadow-md shadow-blue-500/40">
+                            <span className="new-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white whitespace-nowrap">
                               ✨ NEW
                             </span>
                           )}
@@ -315,10 +331,10 @@ export default function Home() {
                           🔑 กุญแจLE
                         </span>
                       )}
-                      {car.price && (
+                      {getDisplayPrice(car) !== null && (
                         <div className="text-center">
                           <div className="text-blue-600 font-semibold text-sm">
-                            💸{getDiscountedPrice(car.price)} บาท
+                            💸{getDisplayPrice(car)} บาท
                           </div>
                         </div>
                       )}

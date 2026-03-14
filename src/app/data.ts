@@ -4,6 +4,8 @@ export type Car = {
   category: string;
   type?: "coupon" | "keyLE";
   isNew?: boolean;
+  isSale?: boolean;
+  salePrice?: number; // ราคาหลังลดที่กำหนดเอง (ไม่ใช้ -10% อัตโนมัติ)
 };
 
 export const categories = [
@@ -20,7 +22,7 @@ export type Category = typeof categories[number];
 
 export const carsByCategory: Record<Category, Car[]> = {
   City: [
-    { name: "Spice", price: 249, category: "City" },
+    { name: "Spice", price: 249, category: "City"},
     { name: "Tutuki", price: 189, category: "City" },
     { name: "Amore", price: 189, category: "City" },
     { name: "Sparrow", price: 199, category: "City" },
@@ -59,7 +61,7 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Take", price: 219, category: "M.Sedan" },
   ],
   SUV: [
-    { name: "Hunter", price: 259, category: "SUV" },
+    { name: "Hunter", price: 259, category: "SUV"},
     { name: "Roid", price: 199, category: "SUV" },
     { name: "Saturn", price: 299, category: "SUV" },
     { name: "Buffalo", price: 199, category: "SUV" },
@@ -128,13 +130,13 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Lex", price: 329,  category: "Sports" },
     { name: "Tornado", price: 489, category: "Sports" },
     { name: "Butter", price: 369, category: "Sports" },
-    { name: "Blossom", price: 369, category: "Sports",isNew: true },
+    { name: "Blossom", price: 369, category: "Sports"},
   ],
   Exotic: [
     { name: "Anx", type: "coupon", category: "Exotic" },
     { name: "Zest", type: "coupon", category: "Exotic" },
     { name: "Lance", type: "coupon", category: "Exotic" },
-    { name: "Apollo", price: 399, category: "Exotic" },
+    { name: "Apollo", price: 399, category: "Exotic"},
     { name: "MGZR", price: 369, category: "Exotic" },
     { name: "Lexyath", type: "coupon", category: "Exotic" },
     { name: "Phoenix", price: 369, category: "Exotic" },
@@ -154,6 +156,8 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Scene", price: 529, category: "Exotic" },
     { name: "Ransir", price: 529, category: "Exotic" },
     { name: "F1i", price: 499, category: "Exotic" },
+    { name: "Aura", price: 499, salePrice: 429, category: "Exotic", isNew: true, isSale: true },
+    { name: "โปร Aura + RZ 100*2", price: 691, salePrice: 616, category: "Exotic", isSale: true },
     { name: "Gabriel", type: "coupon", category: "Exotic" },
     { name: "Veloce9", price: 329, category: "Exotic" },
     { name: "Milano", price: 329, category: "Exotic" },
