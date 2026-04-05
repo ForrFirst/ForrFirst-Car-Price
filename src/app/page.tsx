@@ -5,12 +5,11 @@ import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
-  let price = original;
-  price -= price * 0.10;
-  return Math.round(price);
+  const price = original - original * 0.15;
+  return Math.floor(price);
 }
 
-/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ -10% อัตโนมัติ */
+/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ลด 15% แล้วปัดเศษลง */
 function getDisplayPrice(car: Car): number | null {
   if (!car.price) return null;
   return car.salePrice ?? getDiscountedPrice(car.price);
@@ -86,7 +85,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
-            ราคารถแคช Rebirth 🚗
+          🚗 รถแคช Rebirth ลด 15% 🔥
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">

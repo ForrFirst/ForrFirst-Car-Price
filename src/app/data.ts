@@ -20,7 +20,7 @@ export const categories = [
 
 export type Category = typeof categories[number];
 
-export const carsByCategory: Record<Category, Car[]> = {
+const carsByCategoryRaw: Record<Category, Car[]> = {
   City: [
     { name: "Spice", price: 249, category: "City"},
     { name: "Tutuki", price: 189, category: "City" },
@@ -156,8 +156,8 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Scene", price: 529, category: "Exotic" },
     { name: "Ransir", price: 529, category: "Exotic" },
     { name: "F1i", price: 499, category: "Exotic" },
-    { name: "Aura", price: 499, salePrice: 429, category: "Exotic", isNew: true, isSale: true },
-    { name: "โปร Aura + RZ 100*2", price: 691, salePrice: 616, category: "Exotic", isSale: true },
+    { name: "Aura", price: 499, category: "Exotic", isNew: true },
+    { name: "Aura + RZ 100*2", price: 691, salePrice: 616, category: "Exotic" },
     { name: "Gabriel", type: "coupon", category: "Exotic" },
     { name: "Veloce9", price: 329, category: "Exotic" },
     { name: "Milano", price: 329, category: "Exotic" },
@@ -168,6 +168,13 @@ export const carsByCategory: Record<Category, Car[]> = {
     { name: "Hades", price: 529, category: "Exotic" },
   ],
 };
+
+export const carsByCategory: Record<Category, Car[]> = Object.fromEntries(
+  (Object.entries(carsByCategoryRaw) as [Category, Car[]][]).map(([category, list]) => [
+    category,
+    list.map((car) => ({ ...car, isSale: true })),
+  ])
+) as Record<Category, Car[]>;
 
 // Flatten all cars into a single array for easier use
 export const cars: Car[] = Object.values(carsByCategory).flat();
