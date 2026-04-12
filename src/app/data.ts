@@ -59,7 +59,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Classic", price: 259, category: "M.Sedan" },
     { name: "Pike", price: 219, category: "M.Sedan" },
     { name: "Take", price: 219, category: "M.Sedan" },
-    { name: "Ame", price: 419, category: "M.Sedan", isNew: true },
+    { name: "Ame", price: 419, salePrice: 350, category: "M.Sedan", isNew: true },
   ],
   SUV: [
     { name: "Hunter", price: 259, category: "SUV"},
