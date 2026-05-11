@@ -5,7 +5,8 @@ import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
-  const price = original - original * 0.15;
+  const price = original - original * 0.1; /* ลด 10% */
+  /*const price = original - original * 0.15;*/ /* ลด 15% */
   return Math.floor(price);
 }
 
@@ -85,7 +86,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
-          🚗 รถแคช Rebirth ลด 15% 🔥
+          {/*🚗 รถแคช Rebirth ลด 15% 🔥*/}🚗 รถแคช Rebirth
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
