@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
@@ -16,17 +16,29 @@ function getDisplayPrice(car: Car): number | null {
   return car.salePrice ?? getDiscountedPrice(car.price);
 }
 
+/** ลิงก์เพิ่มเพื่อน/แชท LINE OA — ตั้งค่าใน .env เป็น NEXT_PUBLIC_LINE_URL หรือแก้ค่าเริ่มต้นด้านล่าง */
+const lineContactUrl =
+  process.env.NEXT_PUBLIC_LINE_URL?.trim() ||
+  "https://lin.ee/rGcJh5Y";
+
 export default function Home() {
   const [selected, setSelected] = useState<string[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
+  const classNavRef = useRef<HTMLDivElement>(null);
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
   const total = selectedCars.reduce((sum: number, car: Car) => {
     const p = getDisplayPrice(car);
     return sum + (p ?? 0);
   }, 0);
+  const totalListPrice = selectedCars.reduce(
+    (sum: number, car: Car) => sum + (car.price ?? 0),
+    0
+  );
+  const showTotalBeforeDiscount = totalListPrice > 0 && totalListPrice !== total;
 
   const removeCar = (carName: string) => {
     setSelected(prev => prev.filter(name => name !== carName));
@@ -54,8 +66,24 @@ export default function Home() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    setIsMenuOpen(false); 
+    setIsMenuOpen(false);
+    setIsClassDropdownOpen(false);
   };
+
+  useEffect(() => {
+    if (!isScrolled) setIsClassDropdownOpen(false);
+  }, [isScrolled]);
+
+  useEffect(() => {
+    if (!isClassDropdownOpen || !isScrolled) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (classNavRef.current && !classNavRef.current.contains(e.target as Node)) {
+        setIsClassDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isClassDropdownOpen, isScrolled]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,11 +120,12 @@ export default function Home() {
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
               เลือกรถทั้งหมดที่ต้องการจะสั่งซื้อ สามารถกดปุ่มลูกศร<span className="text-green-600 font-semibold">สีเขียว</span>ทางด้านขวา
               <br className="hidden sm:block" />
-              แล้วแคปรายการทั้งหมดเพื่อส่งรูปให้กับแอดมินทาง Facebook ได้เลยครับ
+              แล้วแคปรายการทั้งหมดเพื่อส่งรูปให้กับแอดมินทาง Facebook หรือ LINE ได้เลยครับ
             </p>
             <div className="inline-block px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm md:text-base text-amber-800 font-medium">
-                💡 หมายเหตุ: ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน
+                💡 หมายเหตุ: ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ โปรดตรวจสอบเลเวลของท่านก่อนสั่งซื้อ 
+                <br className="hidden sm:block" />หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน
               </p>
             </div>
           </div>
@@ -104,21 +133,63 @@ export default function Home() {
         </div>
 
         {/* Desktop Category Navigation - Dynamic Position */}
-        <div className={`hidden md:block ${isScrolled ? 'fixed left-4 top-1/2 transform -translate-y-1/2 z-40' : 'mb-8'}`}>
-          <div className={`bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 ${isScrolled ? 'w-48' : 'w-full'}`}>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
-            <div className={`grid gap-2 ${isScrolled ? 'grid-cols-1' : 'grid-cols-3 lg:grid-cols-7'}`}>
-              {Object.keys(carsByCategory).map((category) => (
-                <button
-                  key={category}
-                  onClick={() => scrollToCategory(category)}
-                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm ${isScrolled ? 'text-left' : 'text-center'}`}
+        <div
+          className={`hidden md:block ${isScrolled ? 'fixed left-4 top-1/2 transform -translate-y-1/2 z-40' : 'mb-8'}`}
+        >
+          {isScrolled ? (
+            <div
+              ref={classNavRef}
+              className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-48"
+            >
+              <button
+                type="button"
+                onClick={() => setIsClassDropdownOpen((o) => !o)}
+                aria-expanded={isClassDropdownOpen}
+                className="w-full flex items-center justify-between gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2.5 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg text-sm"
+              >
+                <span className="text-left">🚀 เลือก Class</span>
+                <svg
+                  className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${isClassDropdownOpen ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden
                 >
-                  🚗 {category}
-                </button>
-              ))}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isClassDropdownOpen && (
+                <div className="grid gap-2 mt-3 grid-cols-1">
+                  {Object.keys(carsByCategory).map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => scrollToCategory(category)}
+                      className="w-full text-left bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm"
+                    >
+                      🚗 {category}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-full">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
+              <div className="grid gap-2 grid-cols-3 lg:grid-cols-7">
+                {Object.keys(carsByCategory).map((category) => (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => scrollToCategory(category)}
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm text-center"
+                  >
+                    🚗 {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -332,7 +403,12 @@ export default function Home() {
                         </span>
                       )}
                       {getDisplayPrice(car) !== null && (
-                        <div className="text-center">
+                        <div className="text-center space-y-1">
+                          {car.price != null && car.price !== getDisplayPrice(car) && (
+                            <div className="text-gray-500 line-through text-xs">
+                              ปกติ {car.price} บาท
+                            </div>
+                          )}
                           <div className="text-blue-600 font-semibold text-sm">
                             💸{getDisplayPrice(car)} บาท
                           </div>
@@ -343,9 +419,18 @@ export default function Home() {
                 ))}
               </div>
               <div className="border-t border-blue-200 pt-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-end">
                   <span className="text-xl font-semibold text-gray-700">รวมทั้งหมด:</span>
-                  <span className="text-3xl font-bold text-blue-600">💸{total.toLocaleString()} บาท</span>
+                  <div className="text-right space-y-1 tabular-nums">
+                    {showTotalBeforeDiscount && (
+                      <div className="text-lg text-gray-500 line-through">
+                        ปกติ {totalListPrice.toLocaleString()} บาท
+                      </div>
+                    )}
+                    <div className="text-2xl sm:text-3xl font-bold text-blue-600">
+                      {showTotalBeforeDiscount ? "รวมทั้งหมด " : ""}{total.toLocaleString()} บาท💸
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -422,6 +507,25 @@ export default function Home() {
     />
   </svg>
 </a>
+
+          {/* LINE */}
+          <a
+            href={lineContactUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#06C755] hover:bg-[#05b34c] text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 group flex items-center justify-center"
+            title="ส่งข้อความผ่าน LINE"
+          >
+            <svg
+              className="w-6 h-6 group-hover:scale-110 transition-transform duration-300"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden
+            >
+              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629v-4.77c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.77zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629v-4.77c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24.411-.433.249-.235-.201-1.255-.82-1.755-1.135-.478-.326-.615-.872-.228-1.047.15-.174.39-.197.58-.095 1.756 1.03 3.27 1.684 4.675 2.073.442.121.847.182 1.216.182 4.42 0 8.05-3.66 8.05-8.131" />
+            </svg>
+          </a>
 
         </div>
       </div>

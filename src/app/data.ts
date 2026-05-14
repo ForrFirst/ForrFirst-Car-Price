@@ -59,7 +59,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Classic", price: 259, category: "M.Sedan" },
     { name: "Pike", price: 219, category: "M.Sedan" },
     { name: "Take", price: 219, category: "M.Sedan" },
-    { name: "Ame", price: 419, /*salePrice: 350,*/ category: "M.Sedan", isNew: true },
+    { name: "Ame", price: 419, category: "M.Sedan"},
   ],
   SUV: [
     { name: "Hunter", price: 259, category: "SUV"},
@@ -72,6 +72,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "TerraTruck", price: 299, category: "SUV" },
     { name: "Commando", price: 159, category: "SUV" },
     { name: "Bullet WD", price: 269, category: "SUV" },
+    { name: "LEON", price: 389, category: "SUV", isNew: true },
   ],
   "L.Sedan": [
     { name: "Kosmos", price: 289, category: "L.Sedan" },
@@ -166,6 +167,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "RC1", type: "coupon", category: "Exotic" },
     { name: "Zet SOL", type: "coupon", category: "Exotic" },
     { name: "Hades", price: 529, category: "Exotic" },
+    { name: "Polis", price: 429, category: "Exotic", isNew: true },
   ],
 };
 
