@@ -313,11 +313,11 @@ export default function Home() {
                               <div className="space-y-1 text-center">
                                 <div className="text-gray-500 line-through text-xs">ปกติ {car.price} บาท</div>
                                 <div className="flex items-center justify-center gap-2 flex-wrap">
-                                  {car.isSale && (
+                                  {/*{car.isSale && (
                                     <span className="sale-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-rose-300 via-orange-200 to-amber-300 text-rose-800 whitespace-nowrap border border-rose-200/60">
                                       🔥 SALE
                                     </span>
-                                  )}
+                                  )}*/}
                                   <span className="text-blue-600 font-semibold text-md">💸{getDisplayPrice(car)} บาท</span>
                                 </div>
                               </div>
@@ -345,7 +345,7 @@ export default function Home() {
               <div className="flex justify-between items-center">
               <div className="flex flex-wrap items-center gap-2 sm:gap-4">
   <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-  🚗 จำนวนรถที่เลือก รวมทั้งหมด {selectedCars.length} คัน
+  🚗 รวมทั้งหมด {selectedCars.length} คัน
   </p>
   <p className="text-sm sm:text-base md:text-lg text-white/80 italic ml-auto mr-auto">
     (แคปส่วนนี้แล้วส่งให้แอดมินครับ)
