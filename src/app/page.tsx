@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
@@ -27,7 +27,6 @@ export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
-  const classNavRef = useRef<HTMLDivElement>(null);
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
   const total = selectedCars.reduce((sum: number, car: Car) => {
@@ -67,23 +66,16 @@ export default function Home() {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     setIsMenuOpen(false);
-    setIsClassDropdownOpen(false);
   };
+
+  /** รีเฟรชหรือเข้าหน้าใหม่ให้เริ่มที่ด้านบนเหมือนเว็บทั่วไป */
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
 
   useEffect(() => {
     if (!isScrolled) setIsClassDropdownOpen(false);
   }, [isScrolled]);
-
-  useEffect(() => {
-    if (!isClassDropdownOpen || !isScrolled) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (classNavRef.current && !classNavRef.current.contains(e.target as Node)) {
-        setIsClassDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isClassDropdownOpen, isScrolled]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,10 +129,7 @@ export default function Home() {
           className={`hidden md:block ${isScrolled ? 'fixed left-4 top-1/2 transform -translate-y-1/2 z-40' : 'mb-8'}`}
         >
           {isScrolled ? (
-            <div
-              ref={classNavRef}
-              className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-48"
-            >
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-48">
               <button
                 type="button"
                 onClick={() => setIsClassDropdownOpen((o) => !o)}
