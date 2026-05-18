@@ -35,7 +35,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Muze", price: 249, category: "City" },
     { name: "Bolero", price: 249, category: "City" },
     { name: "Civil3", price: 369, category: "City" },
-    { name: "Lunar", price: 477, category: "City" },
+    { name: "Lunar", price: 479, category: "City" },
   ],
   "S.Sedan": [
     { name: "Ravic", price: 219, category: "S.Sedan" },
