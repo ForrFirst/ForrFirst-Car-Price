@@ -38,7 +38,7 @@ function MobileSwipeOrderRow({
   const touchStartX = useRef(0);
   const touchStartOffset = useRef(0);
   const price = getDisplayPrice(car);
-  const tag = car.isNew ? "✨" : car.type === "coupon" ? "🎫" : car.type === "keyLE" ? "🔑" : "";
+  const tag = car.isNew ? "✨" : car.type === "coupon" ? "🔑" : car.type === "keyLE" ? "🔑" : "";
 
   const snapOpen = () => setOffsetX(-MOBILE_SWIPE_DELETE_WIDTH);
   const snapClosed = () => setOffsetX(0);
@@ -390,7 +390,7 @@ export default function Home() {
                           <div className="mt-auto">
                             {car.type === "coupon" && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 w-full justify-center">
-                                🎫 รถคูปอง <br/>สอบถามราคากับแอดมิน
+                                🔑 รถคูปอง <br/>สอบถามราคากับแอดมิน
                               </span>
                             )}
                             {car.type === "keyLE" && car.price && (
@@ -535,7 +535,7 @@ export default function Home() {
                       </div>
                       {car.type === "coupon" && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 w-full justify-center">
-                          🎫 รถคูปอง
+                          🔑 รถคูปอง
                         </span>
                       )}
                       {car.type === "keyLE" && car.price && (
