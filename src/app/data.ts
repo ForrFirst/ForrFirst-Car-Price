@@ -80,7 +80,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "TerraTruck", price: 299, category: "SUV" },
     { name: "Commando", price: 159, category: "SUV" },
     { name: "Bullet WD", price: 269, category: "SUV" },
-    { name: "LEON", price: 389, category: "SUV", isNew: true },
+    { name: "LEON", price: 389, category: "SUV"},
   ],
   "L.Sedan": [
     { name: "Kosmos", price: 289, category: "L.Sedan" },
@@ -173,7 +173,8 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Ransir", price: 529, category: "Exotic" },
     { name: "F1i", price: 499, category: "Exotic" },
     { name: "Aura", price: 499, category: "Exotic"},
-    { name: "Polis", price: 429, category: "Exotic", isNew: true },
+    { name: "Dyze", price: 470, category: "Exotic", isNew: true },
+    { name: "Polis", price: 429, category: "Exotic"},
     { name: "Gabriel", type: "coupon", category: "Exotic" },
     { name: "Veloce9", price: 329, category: "Exotic" },
     { name: "Milano", price: 329, category: "Exotic" },
