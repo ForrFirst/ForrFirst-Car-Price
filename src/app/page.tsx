@@ -5,8 +5,8 @@ import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
-  /*const price = original - original * 0.1;*/ /* ลด 10% */
-  const price = original - original * 0.15; /* ลด 15% */
+  const price = original - original * 0.1;/* ลด 10% */
+  // const price = original - original * 0.15; /* ลด 15% */
   return Math.floor(price);
 }
 
@@ -206,7 +206,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
-          🚗 รถแคช Rebirth ลด 15% 🔥
+          {/* 🚗 รถแคช Rebirth ลด 15% 🔥 */}🚗 รถแคช Rebirth🔥
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
@@ -402,11 +402,12 @@ export default function Home() {
                               <div className="space-y-1 text-center">
                                 <div className="text-gray-500 line-through text-xs">ปกติ {car.price} บาท</div>
                                 <div className="flex items-center justify-center gap-2 flex-wrap">
-                                  {car.isSale && (
+                                  {/* ป้าย sale */}
+                                  {/* {car.isSale && (
                                     <span className="sale-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-rose-300 via-orange-200 to-amber-300 text-rose-800 whitespace-nowrap border border-rose-200/60">
                                       🔥 SALE
                                     </span>
-                                  )}
+                                  )} */}
                                   <span className="text-blue-600 font-semibold text-md">💸{getDisplayPrice(car)} บาท</span>
                                 </div>
                               </div>
