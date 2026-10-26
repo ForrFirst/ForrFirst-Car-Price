@@ -7,16 +7,20 @@ import Image from "next/image";
 function getDiscountedPrice(original: number) {
   // const price = original - original * 0.1;   /* ลด 10% */
   // const price = original - original * 0.15; /* ลด 15% */
-  const price = original * 0.8 * 0.9;         /* ลด 20+10% */
+  // const price = original * 0.8 * 0.9;         /* ลด 20+10% */
   // const price = original * 0.8 * 0.85;         /* ลด 20+15% */
+  const price = original * 0.8 * 0.88;       /* ลด 20%+12% */ 
   return Math.ceil(price);
 }
 
-/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ลดแล้วปัดเศษขึ้น */
+/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ลดแล้วปัดเศษลง */
 function getDisplayPrice(car: Car): number | null {
   if (!car.price) return null;
-  return car.salePrice ?? getDiscountedPrice(car.price);
+  const price = car.salePrice ?? getDiscountedPrice(car.price);
+  return Math.floor(price); // ปัดเศษลง
 }
+
+
 
 /** ลิงก์เพิ่มเพื่อน/แชท LINE OA — ตั้งค่าใน .env เป็น NEXT_PUBLIC_LINE_URL หรือแก้ค่าเริ่มต้นด้านล่าง */
 const lineContactUrl =
@@ -120,9 +124,7 @@ function MobileSwipeOrderRow({
 export default function Home() {
   const [selected, setSelected] = useState<string[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [isClassDropdownOpen, setIsClassDropdownOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,18 +182,18 @@ export default function Home() {
   };
 
   const selectedCars = cars.filter((car: Car) => selected.includes(car.name));
-  const visibleCarNames = Object.values(filteredCarsByCategory).flatMap((list) =>
-    list.filter((car) => car.type !== "coupon").map((car) => car.name)
+  const couponCarNames = Object.values(filteredCarsByCategory).flatMap((list) =>
+    list.filter((car) => car.type === "coupon").map((car) => car.name)
   );
-  const isAllSelected =
-    visibleCarNames.length > 0 &&
-    visibleCarNames.every((name) => selected.includes(name));
+  const isAllCouponsSelected =
+    couponCarNames.length > 0 &&
+    couponCarNames.every((name) => selected.includes(name));
 
-  const toggleSelectAll = () => {
-    if (isAllSelected) {
-      setSelected([]);
+  const toggleSelectCoupons = () => {
+    if (isAllCouponsSelected) {
+      setSelected((prev) => prev.filter((name) => !couponCarNames.includes(name)));
     } else {
-      setSelected(visibleCarNames);
+      setSelected((prev) => [...new Set([...prev, ...couponCarNames])]);
     }
   };
 
@@ -244,20 +246,6 @@ export default function Home() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, []);
 
-  useEffect(() => {
-    if (!isScrolled) setIsClassDropdownOpen(false);
-  }, [isScrolled]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 100);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100">
       <div className="max-w-7xl mx-auto p-6">
@@ -277,7 +265,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xl md:text-3xl font-bold text-gray-800 mb-4">
-          🚗 รถแคช Rebirth ลด 30% 🔥
+          🚗 รถแคช Rebirth ลด 32% 🔥
           {/* 🚗 รถแคช Rebirth🔥 */}
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
@@ -296,73 +284,35 @@ export default function Home() {
           <div className="w-24 h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 mx-auto rounded-full mt-4 shadow-md shadow-blue-400/50"></div>
         </div>
 
-        {/* Desktop Category Navigation - Dynamic Position */}
-        <div
-          className={`hidden md:block ${isScrolled ? 'fixed left-4 top-1/2 transform -translate-y-1/2 z-40' : 'mb-8'}`}
-        >
-          {isScrolled ? (
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-48">
-              <button
-                type="button"
-                onClick={() => setIsClassDropdownOpen((o) => !o)}
-                aria-expanded={isClassDropdownOpen}
-                className="w-full flex items-center justify-between gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2.5 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg text-sm"
-              >
-                <span className="text-left">🚀 เลือก Class</span>
-                <svg
-                  className={`w-5 h-5 flex-shrink-0 transition-transform duration-300 ${isClassDropdownOpen ? "rotate-180" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden
+        {/* Desktop Category Navigation */}
+        <div className="hidden md:block mb-8">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-full">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
+            <div className="grid gap-2 grid-cols-3 lg:grid-cols-7">
+              {Object.keys(carsByCategory).map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => scrollToCategory(category)}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm text-center"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isClassDropdownOpen && (
-                <div className="grid gap-2 mt-3 grid-cols-1">
-                  {Object.keys(carsByCategory).map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => scrollToCategory(category)}
-                      className="w-full text-left bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm"
-                    >
-                      🚗 {category}
-                    </button>
-                  ))}
-                </div>
-              )}
+                  🚗 {category}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-4 w-full">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">🚀 เลือก Class</h3>
-              <div className="grid gap-2 grid-cols-3 lg:grid-cols-7">
-                {Object.keys(carsByCategory).map((category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => scrollToCategory(category)}
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105 text-sm text-center"
-                  >
-                    🚗 {category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Sticky: Class (mobile) หรือ Search (ทุกขนาดเมื่อเปิด) */}
-        <div className={`mb-6 sticky top-4 z-40 ${isSearchOpen ? "" : "md:hidden"}`}>
-          {isSearchOpen ? (
+        {/* Search bar */}
+        {isSearchOpen && (
+          <div className="mb-6 sticky top-4 z-40">
             <div className="w-full flex items-center gap-2 bg-white rounded-lg shadow-lg border border-blue-200 px-3 py-2.5 sm:px-4 sm:py-3">
               <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 ref={searchInputRef}
-                type="search"
+                type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -375,7 +325,7 @@ export default function Home() {
                 className="flex-1 min-w-0 bg-transparent text-sm sm:text-base text-gray-800 placeholder:text-gray-400 outline-none"
                 enterKeyHint="done"
               />
-              {searchQuery && (
+              {searchQuery ? (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
@@ -386,29 +336,20 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={closeSearch}
+                  className="text-xs sm:text-sm font-semibold text-blue-600 px-1.5 py-1 shrink-0"
+                >
+                  ปิด
+                </button>
               )}
-              <button
-                type="button"
-                onClick={closeSearch}
-                className="text-xs sm:text-sm font-semibold text-blue-600 px-1.5 py-1 shrink-0"
-              >
-                ปิด
-              </button>
             </div>
-          ) : (
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-              <span>🚀 เลือก Class</span>
-            </button>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Mobile Sidebar */}
+        {/* Class menu — mobile sidebar */}
         {isMenuOpen && (
           <div className="md:hidden fixed inset-0 z-50">
             {/* Backdrop */}
@@ -706,7 +647,42 @@ export default function Home() {
 
         {/* Floating Navigation — ขวากลางจอ */}
         <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 sm:gap-3 z-50">
-          {/* Search — ทุกขนาดหน้าจอ เหนือลูกศรขึ้น */}
+          <div className="relative">
+            {isMenuOpen && (
+              <div className="hidden md:block absolute right-14 top-0 w-44 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-3">
+                <p className="text-xs font-semibold text-gray-700 mb-2 text-center">🚀 เลือก Class</p>
+                <div className="grid gap-1.5">
+                  {Object.keys(carsByCategory).map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => scrollToCategory(category)}
+                      className="w-full text-left bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-2 rounded-lg font-semibold text-sm"
+                    >
+                      🚗 {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(false);
+                setIsMenuOpen((open) => !open);
+              }}
+              className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
+                isMenuOpen
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white text-blue-600 border border-blue-200"
+              }`}
+              title="เลือก Class"
+              aria-label="เลือก Class"
+              aria-expanded={isMenuOpen}
+            >
+              <span className="text-lg sm:text-xl leading-none group-hover:scale-110 inline-block transition-transform duration-300">🚀</span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => {
@@ -731,20 +707,18 @@ export default function Home() {
           </button>
           <button
             type="button"
-            onClick={toggleSelectAll}
-            disabled={visibleCarNames.length === 0}
-            className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group text-[10px] sm:text-xs font-bold leading-tight min-w-[2.5rem] sm:min-w-[3rem] disabled:opacity-40 disabled:cursor-not-allowed ${
-              isAllSelected
-                ? "bg-amber-600 hover:bg-amber-700 text-white"
-                : "bg-amber-400 hover:bg-amber-500 text-amber-950"
+            onClick={toggleSelectCoupons}
+            disabled={couponCarNames.length === 0}
+            className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group disabled:opacity-40 disabled:cursor-not-allowed ${
+              isAllCouponsSelected
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : "bg-white text-emerald-600 border border-emerald-200"
             }`}
-            title={isAllSelected ? "ยกเลิกเลือกทั้งหมด" : "เลือกรถทุกคัน (ยกเว้นรถคูปอง)"}
-            aria-label={isAllSelected ? "ยกเลิกเลือกทั้งหมด" : "เลือกรถทุกคัน ยกเว้นรถคูปอง"}
-            aria-pressed={isAllSelected}
+            title={isAllCouponsSelected ? "ยกเลิกเลือกรถคูปองทั้งหมด" : "เลือกรถคูปองทั้งหมด"}
+            aria-label={isAllCouponsSelected ? "ยกเลิกเลือกรถคูปองทั้งหมด" : "เลือกรถคูปองทั้งหมด"}
+            aria-pressed={isAllCouponsSelected}
           >
-            <span className="group-hover:scale-110 inline-block transition-transform duration-300">
-              {isAllSelected ? "X" : "Rich"}
-            </span>
+            <span className="text-lg sm:text-xl leading-none group-hover:scale-110 inline-block transition-transform duration-300">🔑</span>
           </button>
           <button
             onClick={scrollToTop}
