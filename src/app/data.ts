@@ -141,7 +141,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Spin", price: 259, category: "Sports" },
     { name: "Lex", price: 329,  category: "Sports" },
     { name: "Pique", price: 329, category: "Sports"},
-    { name: "Tornado", price: 489, category: "Sports" },
+    { name: "Tornado (👤80)", price: 489, category: "Sports" },
     { name: "Butter", price: 369, category: "Sports" },
     { name: "Blossom", price: 369, category: "Sports"},
     { name: "Deacon", price: 329, category: "Sports", isNew: true },
@@ -172,8 +172,8 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Ravic FE", price: 329, category: "Exotic" },
     { name: "Garuda", price: 599, category: "Exotic" },
     { name: "Ryzen", price: 329, category: "Exotic" },
-    { name: "Scene", price: 529, category: "Exotic" },
-    { name: "Ransir", price: 529, category: "Exotic" },
+    { name: "Scene (👤60)", price: 529, category: "Exotic" },
+    { name: "Ransir (👤60)", price: 529, category: "Exotic" },
     { name: "F1i", price: 499, category: "Exotic" },
     { name: "Aura", price: 499, category: "Exotic"},
     { name: "Dyze", price: 469, category: "Exotic"},
@@ -185,7 +185,7 @@ const carsByCategoryRaw: Record<Category, Car[]> = {
     { name: "Romans", type: "coupon", category: "Exotic" },
     { name: "RC1", type: "coupon", category: "Exotic" },
     { name: "Zet SOL", type: "coupon", category: "Exotic" },
-    { name: "Hades", price: 529, category: "Exotic" },
+    { name: "Hades (👤60)", price: 529, category: "Exotic" },
   ],
 };
 
