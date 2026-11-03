@@ -5,19 +5,20 @@ import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
 function getDiscountedPrice(original: number) {
-  // const price = original - original * 0.1;   /* ลด 10% */
+  const price = original - original * 0.1;   /* ลด 10% */
   // const price = original - original * 0.15; /* ลด 15% */
   // const price = original * 0.8 * 0.9;         /* ลด 20+10% */
   // const price = original * 0.8 * 0.85;         /* ลด 20+15% */
-  const price = original * 0.8 * 0.88;       /* ลด 20%+12% */ 
-  return Math.ceil(price);
+  // const price = original * 0.8 * 0.88;       /* ลด 20%+12% */ 
+  // ปัดเศษปกติ: ทศนิยม < .5 ปัดลง, .5 ขึ้นไปปัดขึ้น (toFixed กันปัญหาทศนิยมคลาดเคลื่อนของ float)
+  return Math.round(Number(price.toFixed(2)));
 }
 
-/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ลดแล้วปัดเศษลง */
+/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ราคาที่ลดแล้ว */
 function getDisplayPrice(car: Car): number | null {
   if (!car.price) return null;
   const price = car.salePrice ?? getDiscountedPrice(car.price);
-  return Math.floor(price); // ปัดเศษลง
+  return Math.round(price);
 }
 
 
@@ -129,6 +130,9 @@ export default function Home() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredCarsByCategory = Object.fromEntries(
@@ -220,6 +224,33 @@ export default function Home() {
     setShowClearConfirm(false);
   };
 
+  /** สร้างรูปจากรายการสรุป (ซ่อนปุ่ม/ข้อความที่มี data-no-capture) แล้วเปิดหน้าต่างให้บันทึก */
+  const saveSummaryImage = async () => {
+    const node = summaryRef.current;
+    if (!node || isSavingImage) return;
+    setIsSavingImage(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const options = {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        style: { margin: "0" },
+        filter: (el: Node) =>
+          !(el instanceof HTMLElement && el.hasAttribute("data-no-capture")),
+      };
+      // Safari ครั้งแรกบางทีได้รูปว่าง จึงเรียกอุ่นเครื่อง 1 ครั้ง
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isSafari) await toPng(node, options);
+      setSavedImageUrl(await toPng(node, options));
+    } catch (err) {
+      console.error(err);
+      alert("สร้างรูปไม่สำเร็จ ลองแคปหน้าจอแทนได้เลยครับ");
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -265,8 +296,8 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-xl md:text-3xl font-bold text-gray-800 mb-4">
-          🚗 รถแคช Rebirth ลด 32% 🔥
-          {/* 🚗 รถแคช Rebirth🔥 */}
+          {/* 🚗 รถแคช Rebirth ลด 32% 🔥 */}
+          🚗 รถแคช Rebirth🔥
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
@@ -464,11 +495,11 @@ export default function Home() {
                                 <div className="text-gray-500 line-through text-xs">ปกติ {car.price} บาท</div>
                                 <div className="flex items-center justify-center gap-2 flex-wrap">
                                   {/* ป้าย sale */}
-                                  {car.isSale && (
+                                  {/* {car.isSale && (
                                     <span className="sale-badge inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-gradient-to-r from-rose-300 via-orange-200 to-amber-300 text-rose-800 whitespace-nowrap border border-rose-200/60">
                                       🔥 SALE
                                     </span>
-                                  )}
+                                  )} */}
                                   <span className="text-blue-600 font-semibold text-md">💸{getDisplayPrice(car)} บาท</span>
                                 </div>
                               </div>
@@ -491,7 +522,7 @@ export default function Home() {
 
         {/* Selected Cars Summary */}
         {selectedCars.length > 0 && (
-          <div id="order-summary" className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
+          <div id="order-summary" ref={summaryRef} className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
             {/* Header — mobile compact */}
             <div className="md:hidden bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-2">
               <div className="flex justify-between items-start gap-2">
@@ -504,6 +535,7 @@ export default function Home() {
                   </p>
                 </div>
                 <button
+                  data-no-capture
                   onClick={clearAll}
                   className="flex-shrink-0 bg-white/20 hover:bg-white/30 text-white px-5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300"
                 >
@@ -524,6 +556,7 @@ export default function Home() {
                   </p>
                 </div>
                 <button
+                  data-no-capture
                   onClick={clearAll}
                   className="bg-white/20 hover:bg-white/30 text-white px-2 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
                 >
@@ -536,7 +569,7 @@ export default function Home() {
             {/* Mobile — ตาราง + ปัดซ้ายเพื่อลบ */}
             <div className="md:hidden px-2 py-2 pr-8">
           
-              <p className="text-[10px] text-gray-400 text-center py-0.3">
+              <p data-no-capture className="text-[10px] text-gray-400 text-center py-0.3">
                 ปัดไปทางซ้ายเพื่อลบ
               </p>
               <ul>
@@ -637,6 +670,18 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* ปุ่มบันทึกรูป (ไม่ติดไปกับรูป) */}
+            <div data-no-capture className="px-3 pb-4 pt-1 md:px-6 md:pb-6">
+              <button
+                type="button"
+                onClick={saveSummaryImage}
+                disabled={isSavingImage}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:opacity-60 text-white py-3 rounded-xl font-bold shadow-md transition-all duration-300"
+              >
+                {isSavingImage ? "⏳ กำลังสร้างรูป..." : "📷 บันทึกรูปรายการ"}
+              </button>
+            </div>
           </div>
         )}
 
@@ -671,7 +716,7 @@ export default function Home() {
                 setIsSearchOpen(false);
                 setIsMenuOpen((open) => !open);
               }}
-              className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
+              className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
                 isMenuOpen
                   ? "bg-indigo-600 text-white"
                   : "bg-white text-blue-600 border border-blue-200"
@@ -692,7 +737,7 @@ export default function Home() {
                 setIsSearchOpen(true);
               }
             }}
-            className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
+            className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
               isSearchOpen || searchQuery
                 ? "bg-indigo-600 text-white"
                 : "bg-white text-blue-600 border border-blue-200"
@@ -709,7 +754,7 @@ export default function Home() {
             type="button"
             onClick={toggleSelectCoupons}
             disabled={couponCarNames.length === 0}
-            className={`p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group disabled:opacity-40 disabled:cursor-not-allowed ${
               isAllCouponsSelected
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                 : "bg-white text-emerald-600 border border-emerald-200"
@@ -722,7 +767,7 @@ export default function Home() {
           </button>
           <button
             onClick={scrollToTop}
-            className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
+            className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
             title="ไปข้างบนสุด"
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -732,7 +777,7 @@ export default function Home() {
           {selectedCars.length > 0 && (
             <button
               onClick={scrollToBottom}
-              className="bg-green-600 hover:bg-green-700 text-white p-2.5 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
+              className="bg-green-600 hover:bg-green-700 text-white w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
               title="ไปดูรายการสั่งซื้อ"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -858,6 +903,46 @@ export default function Home() {
           </button>
         </div>
       </div>
+
+      {/* Saved image preview modal */}
+      {savedImageUrl && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setSavedImageUrl(null)}
+          ></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">
+              รูปรายการที่เลือก
+            </h3>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={savedImageUrl}
+              alt="รายการที่เลือก"
+              className="w-full rounded-lg border border-blue-100"
+            />
+            <p className="text-xs text-gray-500 text-center mt-2">
+              ถ้ากดบันทึกไม่ได้ (เช่น เปิดในแอป LINE/Facebook) ให้กดค้างที่รูปแล้วเลือก “บันทึกรูปภาพ”
+            </p>
+            <div className="flex gap-3 mt-3">
+              <button
+                type="button"
+                onClick={() => setSavedImageUrl(null)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-all duration-300"
+              >
+                ปิด
+              </button>
+              <a
+                href={savedImageUrl}
+                download="forr-first-order.png"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-center transition-all duration-300"
+              >
+                💾 บันทึกรูป
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clear All Confirmation Modal */}
       {showClearConfirm && (
