@@ -46,6 +46,9 @@ function getDisplayPrice(car: Car): number | null {
  * วาดรูปรายการสั่งซื้อลง canvas "จากข้อมูลโดยตรง" (ชื่อรถ + ราคาจาก data.ts)
  * ไม่ได้ถ่ายรูปจากหน้าเว็บ (DOM) ดังนั้นถ้าลูกค้าแก้ตัวเลขบนหน้าจอผ่าน Inspect
  * ตัวเลขที่แก้จะไม่ติดไปในรูป
+ *
+ * รูปเป็นการ์ดกริด 5 ช่องต่อแถว เหมือนกันทั้งมือถือและ PC
+ * ฟอนต์/ขนาด/น้ำหนักตัวอักษรอ้างอิงจากการ์ดรายการสรุปบนหน้าเว็บ (Tailwind)
  */
 async function renderOrderImage(
   list: Car[]
@@ -56,22 +59,29 @@ async function renderOrderImage(
   } catch {}
 
   const now = new Date(); // เวลา ณ ตอนที่กดบันทึกรูป (ใช้ทั้งในรูปและชื่อไฟล์)
-  const FONT = '"Noto Sans Thai", Tahoma, Thonburi, ui-sans-serif, system-ui, Arial, sans-serif';
-  const W = 720; // ความกว้างรูป (หน่วยตรรกะ)
-  const PAD = 24;
-  const HEADER_H = 88;
-  const COLHEAD_H = 34;
-  const ROW_H = 44;
+  // ใช้ฟอนต์ชุดเดียวกับหน้าเว็บ (body ใน globals.css) ภาษาไทยจะใช้ฟอนต์สำรองของเครื่องเหมือนบนเว็บ
+  const FONT = "Arial, Helvetica, sans-serif";
+
+  const COLS = 5; // 1 แถวมี 5 ช่อง
+  const W = 1000; // ความกว้างรูป (หน่วยตรรกะ)
+  const PAD = 20;
+  const GAP = 10;
+  const CARD_W = (W - PAD * 2 - GAP * (COLS - 1)) / COLS;
+  const CARD_H = 112;
+  const HEADER_H = 80;
+  const GRID_PAD = 20;
   const FOOT_PAD = 18;
+  const CREDIT_H = 36;
 
   const prices = list.map((car) => getDisplayPrice(car));
   const total = prices.reduce<number>((sum, p) => sum + (p ?? 0), 0);
   const totalList = list.reduce((sum, car) => sum + (car.price ?? 0), 0);
   const showBefore = totalList > 0 && totalList !== total;
 
-  const footerH = FOOT_PAD * 2 + 40 + (showBefore ? 28 : 0);
-  const credit_H = 34;
-  const H = HEADER_H + COLHEAD_H + list.length * ROW_H + footerH + credit_H;
+  const rows = Math.ceil(list.length / COLS);
+  const gridH = GRID_PAD * 2 + rows * CARD_H + Math.max(0, rows - 1) * GAP;
+  const footerH = FOOT_PAD * 2 + 36 + (showBefore ? 28 : 0);
+  const H = HEADER_H + gridH + footerH + CREDIT_H;
 
   // จำกัดขนาด canvas ไม่ให้ใหญ่เกินที่มือถือรับไหว (โดยเฉพาะ iOS)
   const scale = Math.min(2, Math.sqrt(12_000_000 / (W * H)));
@@ -90,24 +100,35 @@ async function renderOrderImage(
     while (t.length > 1 && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
     return t + "…";
   };
-  // ข้อความมีเส้นขีดฆ่า (ราคาปกติ) ชิดขวา
-  const strikeRight = (text: string, xRight: number, y: number) => {
-    ctx.textAlign = "right";
-    ctx.fillText(text, xRight, y);
+  // ข้อความมีเส้นขีดฆ่า (ราคาปกติ) จัดชิดขวา/กลาง
+  const strike = (text: string, x: number, y: number, align: "right" | "center") => {
+    ctx.textAlign = align;
+    ctx.fillText(text, x, y);
     const w = ctx.measureText(text).width;
+    const x0 = align === "right" ? x - w : x - w / 2;
     ctx.beginPath();
-    ctx.moveTo(xRight - w, y);
-    ctx.lineTo(xRight, y);
-    ctx.lineWidth = 1.5;
+    ctx.moveTo(x0, y);
+    ctx.lineTo(x0 + w, y);
+    ctx.lineWidth = 1;
     ctx.strokeStyle = ctx.fillStyle as string;
     ctx.stroke();
+  };
+  // เส้นทางสี่เหลี่ยมมุมมน (ใช้ arcTo เพื่อให้ Safari เก่าก็ทำงานได้)
+  const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   };
 
   // พื้นหลังขาว
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
 
-  // ===== หัวรูป (แถบเขียว) =====
+  // ===== หัวรูป (แถบเขียว เหมือนหัวรายการสรุปบนเว็บ) =====
   const grad = ctx.createLinearGradient(0, 0, W, 0);
   grad.addColorStop(0, "#22c55e");
   grad.addColorStop(1, "#059669");
@@ -115,116 +136,124 @@ async function renderOrderImage(
   ctx.fillRect(0, 0, W, HEADER_H);
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "left";
-  ctx.font = `bold 28px ${FONT}`;
-  ctx.fillText(`🚗 รวมทั้งหมด ${list.length} คัน`, PAD, 36);
+  ctx.font = `700 24px ${FONT}`;
+  ctx.fillText(`🚗 รวมทั้งหมด ${list.length} คัน`, PAD, 30);
   // timestamp วันที่-เวลาที่บันทึกรูป (มีวินาที) แสดงใต้หัวข้อ
-  ctx.font = `600 17px ${FONT}`;
+  ctx.font = `16px ${FONT}`;
   const stamp = now.toLocaleString("th-TH", {
     dateStyle: "medium",
     timeStyle: "medium",
   });
-  ctx.fillText(`🕒 บันทึกเมื่อ ${stamp}`, PAD, 66);
+  ctx.fillText(`🕒 บันทึกเมื่อ ${stamp}`, PAD, 58);
 
-  // ===== หัวตาราง =====
-  const X_IDX = PAD + 8; // ลำดับ (กึ่งกลาง)
-  const X_NAME = PAD + 40;
-  const X_CAT = 340;
-  const X_LIST = 560; // ราคาปกติ (ชิดขวา)
-  const X_PRICE = W - PAD; // ราคาขาย (ชิดขวา)
+  const X_RIGHT = W - PAD; // ขอบขวาของยอดรวม
   let y = HEADER_H;
-  ctx.fillStyle = "#eff6ff";
-  ctx.fillRect(0, y, W, COLHEAD_H);
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `600 14px ${FONT}`;
-  ctx.textAlign = "center";
-  ctx.fillText("#", X_IDX, y + COLHEAD_H / 2);
-  ctx.textAlign = "left";
-  ctx.fillText("รถ", X_NAME, y + COLHEAD_H / 2);
-  ctx.fillText("Class", X_CAT, y + COLHEAD_H / 2);
-  ctx.textAlign = "right";
-  ctx.fillText("ปกติ", X_LIST, y + COLHEAD_H / 2);
-  ctx.fillText("ราคา", X_PRICE, y + COLHEAD_H / 2);
-  y += COLHEAD_H;
 
-  // ===== แถวรายการ =====
+  // ===== การ์ดกริด 5 ช่องต่อแถว =====
+  const gridTop = y + GRID_PAD;
   list.forEach((car, i) => {
     const price = prices[i];
-    const cy = y + ROW_H / 2;
-    ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#f8fbff";
-    ctx.fillRect(0, y, W, ROW_H);
-    ctx.fillStyle = "#dbeafe";
-    ctx.fillRect(0, y + ROW_H - 1, W, 1);
+    const x = PAD + (i % COLS) * (CARD_W + GAP);
+    const top = gridTop + Math.floor(i / COLS) * (CARD_H + GAP);
+    const midX = x + CARD_W / 2;
 
-    // ลำดับ
-    ctx.fillStyle = "#6b7280";
-    ctx.font = `15px ${FONT}`;
-    ctx.textAlign = "center";
-    ctx.fillText(String(i + 1), X_IDX, cy);
+    // การ์ด (bg-blue-50 + border-blue-200)
+    roundRect(x, top, CARD_W, CARD_H, 8);
+    ctx.fillStyle = "#eff6ff";
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#bfdbfe";
+    ctx.stroke();
 
-    // ชื่อรถ (+ ไอคอนรถใหม่/คูปอง)
-    const tag = car.isNew ? " ✨" : car.type === "coupon" || car.type === "keyLE" ? " 🔑" : "";
+    // จุดสีน้ำเงินหน้าชื่อ (w-2 h-2)
+    ctx.fillStyle = "#3b82f6";
+    ctx.beginPath();
+    ctx.arc(x + 16, top + 22, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ป้าย ✨ NEW (ไล่สีฟ้า-ฟ้าอมเขียว เหมือนป้ายบนเว็บ)
+    let nameMaxW = CARD_W - 28 - 10;
+    if (car.isNew) {
+      const bw = 52;
+      const bh = 18;
+      const bx = x + CARD_W - 10 - bw;
+      const by = top + 13;
+      const bg = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+      bg.addColorStop(0, "#3b82f6");
+      bg.addColorStop(0.5, "#06b6d4");
+      bg.addColorStop(1, "#2563eb");
+      roundRect(bx, by, bw, bh, 9);
+      ctx.fillStyle = bg;
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `700 10px ${FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText("✨ NEW", bx + bw / 2, by + bh / 2 + 1);
+      nameMaxW -= bw + 4;
+    }
+
+    // ชื่อรถ (font-medium text-sm text-gray-900)
     ctx.fillStyle = "#111827";
-    ctx.font = `bold 17px ${FONT}`;
+    ctx.font = `500 14px ${FONT}`;
     ctx.textAlign = "left";
-    ctx.fillText(fit(car.name + tag, X_CAT - X_NAME - 12), X_NAME, cy);
+    ctx.fillText(fit(car.name, nameMaxW), x + 28, top + 22);
 
-    // Class
+    // Class (text-xs font-medium text-gray-500)
     ctx.fillStyle = "#6b7280";
-    ctx.font = `15px ${FONT}`;
-    ctx.fillText(fit(car.category, X_LIST - 70 - X_CAT), X_CAT, cy);
+    ctx.font = `500 12px ${FONT}`;
+    ctx.fillText(`🚗 ${car.category}`, x + 16, top + 44);
 
-    // ราคาปกติ (ขีดฆ่า) — แสดงเมื่อมีส่วนลด
-    if (price !== null && car.price != null && car.price !== price) {
-      ctx.fillStyle = "#9ca3af";
-      ctx.font = `15px ${FONT}`;
-      strikeRight(car.price.toLocaleString(), X_LIST, cy);
+    // ป้ายรถคูปอง / กุญแจ LE (text-xs font-medium)
+    if (car.type === "coupon" || car.type === "keyLE") {
+      roundRect(x + 10, top + 56, CARD_W - 20, 24, 12);
+      ctx.fillStyle = car.type === "coupon" ? "#dcfce7" : "#dbeafe";
+      ctx.fill();
+      ctx.fillStyle = car.type === "coupon" ? "#166534" : "#1e40af";
+      ctx.font = `500 12px ${FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(car.type === "coupon" ? "🔑 รถคูปอง" : "🔑 กุญแจLE", midX, top + 68);
     }
 
-    // ราคาขาย หรือ "สอบถาม" (รถคูปอง)
-    ctx.textAlign = "right";
+    // ราคา: ปกติขีดฆ่า (text-xs text-gray-500) + ราคาหลังลด (text-sm font-semibold text-blue-600)
     if (price !== null) {
+      if (car.price != null && car.price !== price) {
+        ctx.fillStyle = "#6b7280";
+        ctx.font = `12px ${FONT}`;
+        strike(`ปกติ ${car.price.toLocaleString()} บาท`, midX, top + CARD_H - 40, "center");
+      }
       ctx.fillStyle = "#2563eb";
-      ctx.font = `bold 18px ${FONT}`;
-      ctx.fillText(price.toLocaleString(), X_PRICE, cy);
-    } else {
-      ctx.fillStyle = "#16a34a";
-      ctx.font = `600 15px ${FONT}`;
-      ctx.fillText("สอบถาม", X_PRICE, cy);
+      ctx.font = `600 14px ${FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(`💸${price.toLocaleString()} บาท`, midX, top + CARD_H - 18);
     }
-    y += ROW_H;
   });
+  y += gridH;
 
-  // ===== สรุปยอดรวม =====
-  ctx.fillStyle = "#a7f3d0";
-  ctx.fillRect(0, y, W, 2);
-  const fg = ctx.createLinearGradient(0, y, W, y);
-  fg.addColorStop(0, "#eff6ff");
-  fg.addColorStop(1, "#ecfdf5");
-  ctx.fillStyle = fg;
-  ctx.fillRect(0, y + 2, W, footerH - 2);
-
-  let fy = y + FOOT_PAD + 20;
+  // ===== สรุปยอดรวม (เหมือนส่วนรวมทั้งหมดบนเว็บ) =====
+  ctx.fillStyle = "#bfdbfe";
+  ctx.fillRect(0, y, W, 1);
+  let fy = y + FOOT_PAD + 18;
   if (showBefore) {
     ctx.fillStyle = "#6b7280";
-    ctx.font = `16px ${FONT}`;
-    strikeRight(`ปกติ ${totalList.toLocaleString()} บาท`, X_PRICE, fy);
+    ctx.font = `18px ${FONT}`;
+    strike(`ปกติ ${totalList.toLocaleString()} บาท`, X_RIGHT, fy, "right");
     fy += 28;
   }
   ctx.fillStyle = "#374151";
-  ctx.font = `bold 22px ${FONT}`;
+  ctx.font = `600 20px ${FONT}`;
   ctx.textAlign = "left";
-  ctx.fillText("รวมทั้งหมด", PAD, fy);
+  ctx.fillText("รวมทั้งหมด:", PAD, fy);
   ctx.fillStyle = "#2563eb";
-  ctx.font = `bold 32px ${FONT}`;
+  ctx.font = `700 30px ${FONT}`;
   ctx.textAlign = "right";
-  ctx.fillText(`${total.toLocaleString()} บาท 💸`, X_PRICE, fy);
+  ctx.fillText(`${total.toLocaleString()} บาท💸`, X_RIGHT, fy);
   y += footerH;
 
   // ===== เครดิตท้ายรูป =====
-  ctx.fillStyle = "#9ca3af";
-  ctx.font = `13px ${FONT}`;
+  ctx.fillStyle = "#2563eb";
+  ctx.font = `14px ${FONT}`;
   ctx.textAlign = "center";
-  ctx.fillText("Forr First - Cash Shop Service", W / 2, y + credit_H / 2);
+  ctx.fillText("Forr First - Cash Shop Service", W / 2, y + CREDIT_H / 2);
 
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png")
@@ -1196,19 +1225,22 @@ export default function Home() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setSavedImage(null)}
           ></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-md md:max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col">
+          <div className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-md md:max-w-5xl w-full mx-4 max-h-[90vh] flex flex-col">
             <h3 className="text-lg font-bold text-gray-800 mb-2 text-center shrink-0">
               รูปรายการที่เลือก
             </h3>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {/* รูปเลื่อนดูได้ภายในกรอบ ส่วนปุ่มด้านล่างคงอยู่ตลอด */}
-            <div className="min-h-0 overflow-y-auto rounded-lg border border-blue-100">
+            <div className="min-h-0 overflow-auto rounded-lg border border-blue-100">
               <img
                 src={savedImage.url}
                 alt="รายการที่เลือก"
-                className="w-full block"
+                className="w-full block min-w-[640px] md:min-w-0"
               />
             </div>
+            <p className="md:hidden text-[11px] text-gray-400 text-center mt-1 shrink-0">
+              ปัดซ้าย-ขวา/ขึ้น-ลง เพื่อดูรูปทั้งหมด
+            </p>
             <p className="text-xs text-gray-500 text-center mt-2 shrink-0">
               ถ้ากดบันทึกไม่ได้ (เช่น เปิดในแอป LINE/Facebook) ให้กดค้างที่รูปแล้วเลือก “บันทึกรูปภาพ”
             </p>
