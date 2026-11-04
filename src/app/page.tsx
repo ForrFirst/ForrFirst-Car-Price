@@ -4,24 +4,237 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { cars, Car, carsByCategory } from "./data";
 import Image from "next/image";
 
+/**
+ * คำนวณราคาหลังลด แล้วปัดเศษเป็นจำนวนเต็ม
+ *
+ * กติกาการปัดเศษที่ใช้อยู่ (ปัดเศษปกติ):
+ *   - ทศนิยม < .5  → ปัดลง  เช่น 224.1 → 224
+ *   - ทศนิยม >= .5 → ปัดขึ้น เช่น 184.5 → 185, 211.7 → 212
+ *
+ * ถ้าอยากเปลี่ยนกติกา ให้แก้บรรทัด return ด้านล่าง:
+ *   - ปัดขึ้นเสมอ : return Math.ceil(rounded);
+ *   - ปัดลงเสมอ  : return Math.floor(rounded);
+ *   - ปัดปกติ    : return Math.round(rounded);   <- ใช้อยู่ตอนนี้
+ */
 function getDiscountedPrice(original: number) {
   const price = original - original * 0.1;   /* ลด 10% */
   // const price = original - original * 0.15; /* ลด 15% */
   // const price = original * 0.8 * 0.9;         /* ลด 20+10% */
   // const price = original * 0.8 * 0.85;         /* ลด 20+15% */
-  // const price = original * 0.8 * 0.88;       /* ลด 20%+12% */ 
-  // ปัดเศษปกติ: ทศนิยม < .5 ปัดลง, .5 ขึ้นไปปัดขึ้น (toFixed กันปัญหาทศนิยมคลาดเคลื่อนของ float)
-  return Math.round(Number(price.toFixed(2)));
+  // const price = original * 0.8 * 0.88;       /* ลด 20%+12% */
+
+  // คอมพิวเตอร์เก็บทศนิยมคลาดเคลื่อนได้ เช่น 184.5 อาจกลายเป็น 184.49999999999997
+  // ทำให้ Math.round ปัดลงผิด จึงตัดเหลือ 2 ตำแหน่งก่อน (toFixed) แล้วค่อยปัดเศษ
+  const rounded = Number(price.toFixed(2));
+
+  return Math.round(rounded);
 }
 
-/** ราคาที่แสดงจริง: ใช้ salePrice ถ้ามี ไม่ใช่ใช้ราคาที่ลดแล้ว */
+/**
+ * ราคาที่แสดงจริง
+ *   - ถ้ากำหนด salePrice ไว้ใน data.ts → ใช้ค่านั้นตรง ๆ (ไม่คำนวณลดซ้ำ)
+ *   - ถ้าไม่มี → ใช้ราคาที่ลดและปัดเศษแล้วจาก getDiscountedPrice
+ *   - ถ้าไม่มีราคา (เช่น รถคูปอง) → คืน null แล้วหน้าเว็บจะแสดงว่า "สอบถาม"
+ * ปัดเศษทำที่ getDiscountedPrice แล้ว จึงไม่ต้องปัดซ้ำที่นี่
+ */
 function getDisplayPrice(car: Car): number | null {
   if (!car.price) return null;
-  const price = car.salePrice ?? getDiscountedPrice(car.price);
-  return Math.round(price);
+  return car.salePrice ?? getDiscountedPrice(car.price);
 }
 
+/**
+ * วาดรูปรายการสั่งซื้อลง canvas "จากข้อมูลโดยตรง" (ชื่อรถ + ราคาจาก data.ts)
+ * ไม่ได้ถ่ายรูปจากหน้าเว็บ (DOM) ดังนั้นถ้าลูกค้าแก้ตัวเลขบนหน้าจอผ่าน Inspect
+ * ตัวเลขที่แก้จะไม่ติดไปในรูป
+ */
+async function renderOrderImage(
+  list: Car[]
+): Promise<{ url: string; blob: Blob; filename: string }> {
+  // รอฟอนต์โหลดให้เสร็จก่อนวาด
+  try {
+    await document.fonts?.ready;
+  } catch {}
 
+  const now = new Date(); // เวลา ณ ตอนที่กดบันทึกรูป (ใช้ทั้งในรูปและชื่อไฟล์)
+  const FONT = '"Noto Sans Thai", Tahoma, Thonburi, ui-sans-serif, system-ui, Arial, sans-serif';
+  const W = 720; // ความกว้างรูป (หน่วยตรรกะ)
+  const PAD = 24;
+  const HEADER_H = 88;
+  const COLHEAD_H = 34;
+  const ROW_H = 44;
+  const FOOT_PAD = 18;
+
+  const prices = list.map((car) => getDisplayPrice(car));
+  const total = prices.reduce<number>((sum, p) => sum + (p ?? 0), 0);
+  const totalList = list.reduce((sum, car) => sum + (car.price ?? 0), 0);
+  const showBefore = totalList > 0 && totalList !== total;
+
+  const footerH = FOOT_PAD * 2 + 40 + (showBefore ? 28 : 0);
+  const credit_H = 34;
+  const H = HEADER_H + COLHEAD_H + list.length * ROW_H + footerH + credit_H;
+
+  // จำกัดขนาด canvas ไม่ให้ใหญ่เกินที่มือถือรับไหว (โดยเฉพาะ iOS)
+  const scale = Math.min(2, Math.sqrt(12_000_000 / (W * H)));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas not supported");
+  ctx.scale(scale, scale);
+  ctx.textBaseline = "middle";
+
+  // ตัดข้อความที่ยาวเกินพื้นที่ แล้วต่อท้ายด้วย …
+  const fit = (text: string, maxW: number) => {
+    if (ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+    return t + "…";
+  };
+  // ข้อความมีเส้นขีดฆ่า (ราคาปกติ) ชิดขวา
+  const strikeRight = (text: string, xRight: number, y: number) => {
+    ctx.textAlign = "right";
+    ctx.fillText(text, xRight, y);
+    const w = ctx.measureText(text).width;
+    ctx.beginPath();
+    ctx.moveTo(xRight - w, y);
+    ctx.lineTo(xRight, y);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = ctx.fillStyle as string;
+    ctx.stroke();
+  };
+
+  // พื้นหลังขาว
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  // ===== หัวรูป (แถบเขียว) =====
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, "#22c55e");
+  grad.addColorStop(1, "#059669");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "left";
+  ctx.font = `bold 28px ${FONT}`;
+  ctx.fillText(`🚗 รวมทั้งหมด ${list.length} คัน`, PAD, 36);
+  // timestamp วันที่-เวลาที่บันทึกรูป (มีวินาที) แสดงใต้หัวข้อ
+  ctx.font = `600 17px ${FONT}`;
+  const stamp = now.toLocaleString("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
+  ctx.fillText(`🕒 บันทึกเมื่อ ${stamp}`, PAD, 66);
+
+  // ===== หัวตาราง =====
+  const X_IDX = PAD + 8; // ลำดับ (กึ่งกลาง)
+  const X_NAME = PAD + 40;
+  const X_CAT = 340;
+  const X_LIST = 560; // ราคาปกติ (ชิดขวา)
+  const X_PRICE = W - PAD; // ราคาขาย (ชิดขวา)
+  let y = HEADER_H;
+  ctx.fillStyle = "#eff6ff";
+  ctx.fillRect(0, y, W, COLHEAD_H);
+  ctx.fillStyle = "#6b7280";
+  ctx.font = `600 14px ${FONT}`;
+  ctx.textAlign = "center";
+  ctx.fillText("#", X_IDX, y + COLHEAD_H / 2);
+  ctx.textAlign = "left";
+  ctx.fillText("รถ", X_NAME, y + COLHEAD_H / 2);
+  ctx.fillText("Class", X_CAT, y + COLHEAD_H / 2);
+  ctx.textAlign = "right";
+  ctx.fillText("ปกติ", X_LIST, y + COLHEAD_H / 2);
+  ctx.fillText("ราคา", X_PRICE, y + COLHEAD_H / 2);
+  y += COLHEAD_H;
+
+  // ===== แถวรายการ =====
+  list.forEach((car, i) => {
+    const price = prices[i];
+    const cy = y + ROW_H / 2;
+    ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#f8fbff";
+    ctx.fillRect(0, y, W, ROW_H);
+    ctx.fillStyle = "#dbeafe";
+    ctx.fillRect(0, y + ROW_H - 1, W, 1);
+
+    // ลำดับ
+    ctx.fillStyle = "#6b7280";
+    ctx.font = `15px ${FONT}`;
+    ctx.textAlign = "center";
+    ctx.fillText(String(i + 1), X_IDX, cy);
+
+    // ชื่อรถ (+ ไอคอนรถใหม่/คูปอง)
+    const tag = car.isNew ? " ✨" : car.type === "coupon" || car.type === "keyLE" ? " 🔑" : "";
+    ctx.fillStyle = "#111827";
+    ctx.font = `bold 17px ${FONT}`;
+    ctx.textAlign = "left";
+    ctx.fillText(fit(car.name + tag, X_CAT - X_NAME - 12), X_NAME, cy);
+
+    // Class
+    ctx.fillStyle = "#6b7280";
+    ctx.font = `15px ${FONT}`;
+    ctx.fillText(fit(car.category, X_LIST - 70 - X_CAT), X_CAT, cy);
+
+    // ราคาปกติ (ขีดฆ่า) — แสดงเมื่อมีส่วนลด
+    if (price !== null && car.price != null && car.price !== price) {
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = `15px ${FONT}`;
+      strikeRight(car.price.toLocaleString(), X_LIST, cy);
+    }
+
+    // ราคาขาย หรือ "สอบถาม" (รถคูปอง)
+    ctx.textAlign = "right";
+    if (price !== null) {
+      ctx.fillStyle = "#2563eb";
+      ctx.font = `bold 18px ${FONT}`;
+      ctx.fillText(price.toLocaleString(), X_PRICE, cy);
+    } else {
+      ctx.fillStyle = "#16a34a";
+      ctx.font = `600 15px ${FONT}`;
+      ctx.fillText("สอบถาม", X_PRICE, cy);
+    }
+    y += ROW_H;
+  });
+
+  // ===== สรุปยอดรวม =====
+  ctx.fillStyle = "#a7f3d0";
+  ctx.fillRect(0, y, W, 2);
+  const fg = ctx.createLinearGradient(0, y, W, y);
+  fg.addColorStop(0, "#eff6ff");
+  fg.addColorStop(1, "#ecfdf5");
+  ctx.fillStyle = fg;
+  ctx.fillRect(0, y + 2, W, footerH - 2);
+
+  let fy = y + FOOT_PAD + 20;
+  if (showBefore) {
+    ctx.fillStyle = "#6b7280";
+    ctx.font = `16px ${FONT}`;
+    strikeRight(`ปกติ ${totalList.toLocaleString()} บาท`, X_PRICE, fy);
+    fy += 28;
+  }
+  ctx.fillStyle = "#374151";
+  ctx.font = `bold 22px ${FONT}`;
+  ctx.textAlign = "left";
+  ctx.fillText("รวมทั้งหมด", PAD, fy);
+  ctx.fillStyle = "#2563eb";
+  ctx.font = `bold 32px ${FONT}`;
+  ctx.textAlign = "right";
+  ctx.fillText(`${total.toLocaleString()} บาท 💸`, X_PRICE, fy);
+  y += footerH;
+
+  // ===== เครดิตท้ายรูป =====
+  ctx.fillStyle = "#9ca3af";
+  ctx.font = `13px ${FONT}`;
+  ctx.textAlign = "center";
+  ctx.fillText("Forr First - Cash Shop Service", W / 2, y + credit_H / 2);
+
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png")
+  );
+  // ชื่อไฟล์มี timestamp เช่น forr-first-order-20261104-143005.png
+  const p2 = (n: number) => String(n).padStart(2, "0");
+  const filename = `forr-first-order-${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}-${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}.png`;
+
+  return { url: canvas.toDataURL("image/png"), blob, filename };
+}
 
 /** ลิงก์เพิ่มเพื่อน/แชท LINE OA — ตั้งค่าใน .env เป็น NEXT_PUBLIC_LINE_URL หรือแก้ค่าเริ่มต้นด้านล่าง */
 const lineContactUrl =
@@ -130,9 +343,9 @@ export default function Home() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const summaryRef = useRef<HTMLDivElement>(null);
   const [isSavingImage, setIsSavingImage] = useState(false);
-  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null);
+  const [savedImage, setSavedImage] = useState<{ url: string; blob: Blob; filename: string } | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredCarsByCategory = Object.fromEntries(
@@ -201,6 +414,23 @@ export default function Home() {
     }
   };
 
+  // ===== เลือกรถใหม่ (isNew: true ใน data.ts) ทั้งหมดในครั้งเดียว =====
+  // ทำงานเหมือนปุ่มเลือกรถคูปอง: กดครั้งแรกเลือกทั้งหมด กดอีกครั้งยกเลิกเฉพาะรถใหม่
+  // (นับเฉพาะรถที่ยังแสดงอยู่ตามผลค้นหา)
+  const newCarNames = Object.values(filteredCarsByCategory).flatMap((list) =>
+    list.filter((car) => car.isNew).map((car) => car.name)
+  );
+  const isAllNewSelected =
+    newCarNames.length > 0 && newCarNames.every((name) => selected.includes(name));
+
+  const toggleSelectNewCars = () => {
+    if (isAllNewSelected) {
+      setSelected((prev) => prev.filter((name) => !newCarNames.includes(name)));
+    } else {
+      setSelected((prev) => [...new Set([...prev, ...newCarNames])]);
+    }
+  };
+
   const total = selectedCars.reduce((sum: number, car: Car) => {
     const p = getDisplayPrice(car);
     return sum + (p ?? 0);
@@ -224,31 +454,43 @@ export default function Home() {
     setShowClearConfirm(false);
   };
 
-  /** สร้างรูปจากรายการสรุป (ซ่อนปุ่ม/ข้อความที่มี data-no-capture) แล้วเปิดหน้าต่างให้บันทึก */
+  /**
+   * สร้างรูปจากข้อมูลรถที่เลือก (selected + data.ts) ไม่ได้อ่านจากหน้าเว็บ
+   * ใช้ cars กรองจาก selected ตรง ๆ เพื่อไม่ให้พึ่งค่าที่แสดงบนหน้าจอ
+   */
   const saveSummaryImage = async () => {
-    const node = summaryRef.current;
-    if (!node || isSavingImage) return;
+    if (isSavingImage || selected.length === 0) return;
     setIsSavingImage(true);
     try {
-      const { toPng } = await import("html-to-image");
-      const options = {
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-        style: { margin: "0" },
-        filter: (el: Node) =>
-          !(el instanceof HTMLElement && el.hasAttribute("data-no-capture")),
-      };
-      // Safari ครั้งแรกบางทีได้รูปว่าง จึงเรียกอุ่นเครื่อง 1 ครั้ง
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      if (isSafari) await toPng(node, options);
-      setSavedImageUrl(await toPng(node, options));
+      const list = cars.filter((car: Car) => selected.includes(car.name));
+      setCopyStatus("idle");
+      setSavedImage(await renderOrderImage(list));
     } catch (err) {
       console.error(err);
-      alert("สร้างรูปไม่สำเร็จ ลองแคปหน้าจอแทนได้เลยครับ");
+      alert("สร้างรูปไม่สำเร็จ ลองแคปหน้าจอรายการแทนได้เลยครับ");
     } finally {
       setIsSavingImage(false);
     }
+  };
+
+  /** คัดลอกรูปไปคลิปบอร์ด (ใช้ได้เฉพาะเบราว์เซอร์ที่รองรับ และต้องเป็น HTTPS) */
+  const canCopyImage =
+    typeof window !== "undefined" &&
+    "ClipboardItem" in window &&
+    typeof navigator.clipboard?.write === "function";
+
+  const copyImage = async () => {
+    if (!savedImage) return;
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": savedImage.blob }),
+      ]);
+      setCopyStatus("copied");
+    } catch (err) {
+      console.error(err);
+      setCopyStatus("failed");
+    }
+    setTimeout(() => setCopyStatus("idle"), 2500);
   };
 
   const scrollToTop = () => {
@@ -303,12 +545,31 @@ export default function Home() {
             <p className="text-base md:text-lg text-gray-700 leading-relaxed">
               เลือกรถทั้งหมดที่ต้องการจะสั่งซื้อ สามารถกดปุ่มลูกศร<span className="text-green-600 font-semibold">สีเขียว</span>ทางด้านขวา
               <br className="hidden sm:block" />
-              แล้วแคปรายการทั้งหมดเพื่อส่งรูปให้กับแอดมินทาง Facebook หรือ LINE ได้เลยครับ
+              แล้วกดปุ่มบันทึกรูปรายการ เพื่อส่งรูปให้กับแอดมินทาง Facebook หรือ LINE ได้เลยครับ
             </p>
-            <div className="inline-block px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm md:text-base text-amber-800 font-medium">
-                💡 หมายเหตุ: ราคาที่แสดงอยู่จะเป็นราคาต่ำสุดของรถนั้นๆ โปรดตรวจสอบเลเวลของท่านก่อนสั่งซื้อ 
-                <br className="hidden sm:block" />หากต้องการเลเวลอื่น โปรดแจ้งแอดมิน
+            {/* เงื่อนไขและข้อตกลงก่อนสั่งซื้อ */}
+            <div className="text-left bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-md px-4 py-3 md:px-5 md:py-4">
+              <p className="text-base md:text-lg font-bold text-indigo-900 mb-2">
+                📌 เงื่อนไขและข้อตกลงก่อนสั่งซื้อ
+              </p>
+              <ul className="list-disc pl-5 space-y-1.5 text-sm md:text-base text-gray-700 marker:text-indigo-400">
+                <li>
+                  ราคาที่แสดงเป็น<span className="font-bold text-indigo-900">ราคาต่ำสุด</span>ของรถนั้นๆ{" "}
+                  <span className="text-amber-700">
+                    (หากต้องการสั่งซื้อเลเวลอื่น โปรดติดต่อแอดมินก่อนชำระเงิน)
+                  </span>
+                </li>
+                <li>
+                  โปรดตรวจสอบ “<span className="font-bold text-indigo-900">เลเวลตัวละคร 👤</span>”
+                  ของท่านให้ตรงตามเงื่อนไขของทางเกมก่อนกดสั่งซื้อทุกครั้ง
+                </li>
+                <li className="font-bold text-red-600 marker:text-red-500">
+                  หากเลเวลไม่ตรงตามเงื่อนไขจนไม่สามารถรับ/ใช้งานได้ ทางร้านขอสงวนสิทธิ์
+                  <span className="underline">ไม่รับเปลี่ยนสินค้า คืนเงิน หรือชดเชยทุกกรณี</span>
+                </li>
+              </ul>
+              <p className="mt-2 pt-2 border-t border-blue-200/70 text-xs md:text-sm italic text-indigo-400">
+                * การชำระเงินถือว่าผู้ซื้อได้อ่าน เข้าใจ และยอมรับเงื่อนไขนี้แล้วโดยสมบูรณ์
               </p>
             </div>
           </div>
@@ -522,7 +783,7 @@ export default function Home() {
 
         {/* Selected Cars Summary */}
         {selectedCars.length > 0 && (
-          <div id="order-summary" ref={summaryRef} className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
+          <div id="order-summary" className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-200/50 overflow-hidden">
             {/* Header — mobile compact */}
             <div className="md:hidden bg-gradient-to-r from-green-500 to-emerald-600 px-3 py-2">
               <div className="flex justify-between items-start gap-2">
@@ -531,11 +792,10 @@ export default function Home() {
                   🚗 รวมทั้งหมด {selectedCars.length} คัน
                   </p>
                   <p className="text-xs text-white/90 mt-0.5">
-                  (แคปส่วนนี้แล้วส่งให้แอดมินครับ)
+                  (กดบันทึกรูปด้านล่าง แล้วส่งให้แอดมินครับ)
                   </p>
                 </div>
                 <button
-                  data-no-capture
                   onClick={clearAll}
                   className="flex-shrink-0 bg-white/20 hover:bg-white/30 text-white px-5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300"
                 >
@@ -552,11 +812,10 @@ export default function Home() {
                     🚗 รวมทั้งหมด {selectedCars.length} คัน
                   </p>
                   <p className="text-sm sm:text-base md:text-lg text-white/80 italic">
-                    (แคปส่วนนี้แล้วส่งให้แอดมินครับ)
+                    (กดบันทึกรูปด้านล่าง แล้วส่งให้แอดมินครับ)
                   </p>
                 </div>
                 <button
-                  data-no-capture
                   onClick={clearAll}
                   className="bg-white/20 hover:bg-white/30 text-white px-2 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center space-x-2"
                 >
@@ -569,7 +828,7 @@ export default function Home() {
             {/* Mobile — ตาราง + ปัดซ้ายเพื่อลบ */}
             <div className="md:hidden px-2 py-2 pr-8">
           
-              <p data-no-capture className="text-[10px] text-gray-400 text-center py-0.3">
+              <p className="text-[10px] text-gray-400 text-center py-0.3">
                 ปัดไปทางซ้ายเพื่อลบ
               </p>
               <ul>
@@ -671,8 +930,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ปุ่มบันทึกรูป (ไม่ติดไปกับรูป) */}
-            <div data-no-capture className="px-3 pb-4 pt-1 md:px-6 md:pb-6">
+            {/* ปุ่มบันทึกรูป — วาดรูปจากข้อมูลโดยตรง */}
+            <div className="px-3 pb-4 pt-1 md:px-6 md:pb-6">
               <button
                 type="button"
                 onClick={saveSummaryImage}
@@ -691,7 +950,7 @@ export default function Home() {
         </div>
 
         {/* Floating Navigation — ขวากลางจอ */}
-        <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2 sm:gap-3 z-50">
+        <div className="fixed right-4 sm:right-6 top-1/2 -translate-y-1/2 flex flex-col items-end gap-2 sm:gap-3 z-50">
           <div className="relative">
             {isMenuOpen && (
               <div className="hidden md:block absolute right-14 top-0 w-44 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-blue-200/50 p-3">
@@ -750,6 +1009,7 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
+          <div className="h-px w-6 sm:w-8 bg-blue-200 mr-2" aria-hidden="true"></div>
           <button
             type="button"
             onClick={toggleSelectCoupons}
@@ -765,6 +1025,26 @@ export default function Home() {
           >
             <span className="text-lg sm:text-xl leading-none group-hover:scale-110 inline-block transition-transform duration-300">🔑</span>
           </button>
+          {/* ปุ่มเลือกรถใหม่ทั้งหมด — ปุ่มกลมขนาดเท่าปุ่มอื่น สีไล่ฟ้า-ฟ้าอมเขียวเหมือนป้าย ✨ NEW บนการ์ดรถ */}
+          <button
+            type="button"
+            onClick={toggleSelectNewCars}
+            disabled={newCarNames.length === 0}
+            className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex flex-col items-center justify-center gap-0.5 rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group text-white disabled:opacity-40 disabled:cursor-not-allowed ${
+              isAllNewSelected
+                ? "bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-800 ring-2 ring-cyan-400 ring-offset-2"
+                : "bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 hover:from-blue-600 hover:via-cyan-600 hover:to-blue-700"
+            }`}
+            title={isAllNewSelected ? "ยกเลิกเลือกรถใหม่ทั้งหมด" : "เลือกรถใหม่ทั้งหมด"}
+            aria-label={isAllNewSelected ? "ยกเลิกเลือกรถใหม่ทั้งหมด" : "เลือกรถใหม่ทั้งหมด"}
+            aria-pressed={isAllNewSelected}
+          >
+            <span className="text-xs sm:text-sm leading-none inline-block group-hover:scale-110 transition-transform duration-300">
+              {isAllNewSelected ? "✓" : "✨"}
+            </span>
+            <span className="text-[9px] sm:text-[11px] font-extrabold leading-none">NEW</span>
+          </button>
+          <div className="h-px w-6 sm:w-8 bg-blue-200 mr-2" aria-hidden="true"></div>
           <button
             onClick={scrollToTop}
             className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
@@ -774,17 +1054,22 @@ export default function Home() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
           </button>
-          {selectedCars.length > 0 && (
-            <button
+          {/* ปุ่มลงไปดูรายการ: ซ่อนด้วย invisible (ยังกินที่) เพื่อไม่ให้ปุ่มอื่นเลื่อนตอนเลือก/ยกเลิกรถ */}
+          <button
+              type="button"
               onClick={scrollToBottom}
-              className="bg-green-600 hover:bg-green-700 text-white w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group"
+              disabled={selectedCars.length === 0}
+              tabIndex={selectedCars.length === 0 ? -1 : 0}
+              aria-hidden={selectedCars.length === 0}
+              className={`bg-green-600 hover:bg-green-700 text-white w-10 h-10 sm:w-12 sm:h-12 shrink-0 flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:shadow-xl group ${
+                selectedCars.length === 0 ? "invisible pointer-events-none" : ""
+              }`}
               title="ไปดูรายการสั่งซื้อ"
             >
               <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </button>
-          )}
         </div>
 
         {/* Social Media — desktop: แยกปุ่ม */}
@@ -801,7 +1086,7 @@ export default function Home() {
             </svg>
           </a>
           <a
-            href="https://m.me/violettobyforrfirst?text=รับรถแคชตามรายการนี้ครับ (ส่งรูปรายการทั้งหมดที่แคปไว้ได้เลยครับ)"
+            href="https://m.me/violettobyforrfirst?text=รับรถแคชตามรายการนี้ครับ (ส่งรูปรายการที่บันทึกไว้ได้เลยครับ)"
             target="_blank"
             rel="noopener noreferrer"
             className="w-12 h-12 rounded-full bg-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 flex items-center justify-center"
@@ -855,7 +1140,7 @@ export default function Home() {
               </svg>
             </a>
             <a
-              href="https://m.me/violettobyforrfirst?text=รับรถแคชตามรายการนี้ครับ (ส่งรูปรายการทั้งหมดที่แคปไว้ได้เลยครับ)"
+              href="https://m.me/violettobyforrfirst?text=รับรถแคชตามรายการนี้ครับ (ส่งรูปรายการที่บันทึกไว้ได้เลยครับ)"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setIsContactOpen(false)}
@@ -905,37 +1190,53 @@ export default function Home() {
       </div>
 
       {/* Saved image preview modal */}
-      {savedImageUrl && (
+      {savedImage && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setSavedImageUrl(null)}
+            onClick={() => setSavedImage(null)}
           ></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-800 mb-2 text-center">
+          <div className="relative bg-white rounded-2xl shadow-2xl p-4 max-w-md md:max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <h3 className="text-lg font-bold text-gray-800 mb-2 text-center shrink-0">
               รูปรายการที่เลือก
             </h3>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={savedImageUrl}
-              alt="รายการที่เลือก"
-              className="w-full rounded-lg border border-blue-100"
-            />
-            <p className="text-xs text-gray-500 text-center mt-2">
+            {/* รูปเลื่อนดูได้ภายในกรอบ ส่วนปุ่มด้านล่างคงอยู่ตลอด */}
+            <div className="min-h-0 overflow-y-auto rounded-lg border border-blue-100">
+              <img
+                src={savedImage.url}
+                alt="รายการที่เลือก"
+                className="w-full block"
+              />
+            </div>
+            <p className="text-xs text-gray-500 text-center mt-2 shrink-0">
               ถ้ากดบันทึกไม่ได้ (เช่น เปิดในแอป LINE/Facebook) ให้กดค้างที่รูปแล้วเลือก “บันทึกรูปภาพ”
             </p>
-            <div className="flex gap-3 mt-3">
+            <div className="flex gap-2 mt-3 shrink-0">
               <button
                 type="button"
-                onClick={() => setSavedImageUrl(null)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-semibold transition-all duration-300"
+                onClick={() => setSavedImage(null)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-300"
               >
                 ปิด
               </button>
+              {canCopyImage && (
+                <button
+                  type="button"
+                  onClick={copyImage}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold text-sm transition-all duration-300"
+                >
+                  {copyStatus === "copied"
+                    ? "✅ คัดลอกแล้ว"
+                    : copyStatus === "failed"
+                    ? "❌ คัดลอกไม่ได้"
+                    : "📋 คัดลอกรูป"}
+                </button>
+              )}
               <a
-                href={savedImageUrl}
-                download="forr-first-order.png"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold text-center transition-all duration-300"
+                href={savedImage.url}
+                download={savedImage.filename}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-semibold text-sm text-center transition-all duration-300"
               >
                 💾 บันทึกรูป
               </a>
