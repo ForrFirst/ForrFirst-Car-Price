@@ -571,10 +571,17 @@ export default function Home() {
           🚗 รถแคช Rebirth🔥
           </p>
           <div className="max-w-3xl mx-auto space-y-3">
-            <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-              เลือกรถทั้งหมดที่ต้องการจะสั่งซื้อ สามารถกดปุ่มลูกศร<span className="text-green-600 font-semibold">สีเขียว</span>ทางด้านขวา
+            {/* ภาษาไทยไม่มีช่องว่างคั่นคำ เบราว์เซอร์เลยตัดบรรทัดกลางคำได้ (เช่น ลูก/ศร)
+                จึงแบ่งเป็นวลีด้วย inline-block ให้ตัดบรรทัดได้เฉพาะระหว่างวลี */}
+            <p className="text-[15px] sm:text-base md:text-lg text-gray-700 leading-relaxed text-balance">
+              <span className="inline-block">เลือกรถทั้งหมดที่ต้องการจะสั่งซื้อ</span>{" "}
+              <span className="inline-block">
+                สามารถกดปุ่มลูกศร<span className="text-green-600 font-semibold">สีเขียว</span>ทางด้านขวา
+              </span>
               <br className="hidden sm:block" />
-              แล้วกดปุ่มบันทึกรูปรายการ เพื่อส่งรูปให้กับแอดมินทาง Facebook หรือ LINE ได้เลยครับ
+              <span className="inline-block">แล้วกดปุ่มบันทึกรูปรายการ</span>{" "}
+              <span className="inline-block">เพื่อส่งรูปให้กับแอดมิน</span>{" "}
+              <span className="inline-block">ทาง Facebook หรือ LINE ได้เลยครับ</span>
             </p>
             {/* เงื่อนไขและข้อตกลงก่อนสั่งซื้อ */}
             <div className="text-left bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-md px-4 py-3 md:px-5 md:py-4">
