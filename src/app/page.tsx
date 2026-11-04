@@ -1249,7 +1249,7 @@ export default function Home() {
               ปัดซ้าย-ขวา/ขึ้น-ลง เพื่อดูรูปทั้งหมด
             </p>
             <p className="text-xs text-gray-500 text-center mt-2 shrink-0">
-              ถ้ากดบันทึกไม่ได้ (เช่น เปิดในแอป LINE/Facebook) ให้กดค้างที่รูปแล้วเลือก “บันทึกรูปภาพ”
+              ถ้ากดบันทึกไม่ได้ (เช่น เปิดในแอป LINE/Facebook) ให้กดค้างที่รูปแล้วเลือก “บันทึกรูปภาพ” หรือกด "คัดลอกรูป"
             </p>
             <div className="flex gap-2 mt-3 shrink-0">
               <button
